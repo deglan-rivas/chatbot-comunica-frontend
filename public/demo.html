@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot Widget - Demo</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .demo-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .demo-header h1 {
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    .demo-header p {
+      color: #6b7280;
+    }
+
+    .demo-content {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .demo-content h2 {
+      color: #1f2937;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+
+    .demo-controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .demo-btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .demo-btn-primary {
+      background: #0056b3;
+      color: white;
+    }
+
+    .demo-btn-primary:hover {
+      background: #004494;
+    }
+
+    .demo-btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .demo-btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .demo-info {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .demo-info p {
+      color: #0369a1;
+      font-size: 0.875rem;
+    }
+
+    .demo-code {
+      background: #1f2937;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+
+    .demo-code pre {
+      color: #e5e7eb;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .demo-code .comment { color: #6b7280; }
+    .demo-code .string { color: #a5f3fc; }
+    .demo-code .keyword { color: #c084fc; }
+    .demo-code .property { color: #86efac; }
+
+    .status {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+    }
+    .status.success { background: #dcfce7; color: #166534; }
+    .status.error { background: #fee2e2; color: #991b1b; }
+    .status.loading { background: #fef3c7; color: #92400e; }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>Chatbot Widget Demo</h1>
+      <p>Widget de chatbot embebible estilo WhatsApp</p>
+    </div>
+
+    <div class="demo-content">
+      <h2>Controles</h2>
+      <div class="demo-controls">
+        <button class="demo-btn demo-btn-primary" id="btn-open">
+          Abrir Chat
+        </button>
+        <button class="demo-btn demo-btn-secondary" id="btn-close">
+          Cerrar Chat
+        </button>
+        <button class="demo-btn demo-btn-secondary" id="btn-toggle">
+          Toggle Chat
+        </button>
+        <button class="demo-btn demo-btn-secondary" id="btn-theme">
+          Toggle Tema
+        </button>
+      </div>
+
+      <div id="status" class="status loading">Cargando widget...</div>
+
+      <div class="demo-info">
+        <p>
+          <strong>Nota:</strong> El boton azul flotante en la esquina inferior derecha es el widget.
+          Haz clic en el para abrir el chat.
+        </p>
+      </div>
+
+      <h2 style="margin-top: 2rem;">Codigo de Integracion</h2>
+      <div class="demo-code">
+        <pre><span class="comment">// Cargar el widget</span>
+<span class="keyword">import</span> { ChatbotWidget } <span class="keyword">from</span> <span class="string">'chatbot-widget'</span>;
+
+<span class="comment">// O via script tag</span>
+<span class="comment">// &lt;script src="chatbot-widget.umd.js"&gt;&lt;/script&gt;</span>
+
+<span class="comment">// Inicializar</span>
+ChatbotWidget.init({
+  <span class="property">projectId</span>: <span class="string">'mi-proyecto'</span>,
+  <span class="property">endpoints</span>: {
+    <span class="property">websocket</span>: <span class="string">'wss://api.ejemplo.com/chat'</span>,
+  },
+  <span class="property">bot</span>: {
+    <span class="property">name</span>: <span class="string">'Soporte'</span>,
+  },
+});</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget Script -->
+  <script type="module">
+    import { ChatbotWidget } from '/src/index.tsx';
+    import { useChatStore } from '/src/core/store/chat.store.ts';
+
+    const statusEl = document.getElementById('status');
+
+    function setStatus(type, message) {
+      statusEl.className = 'status ' + type;
+      statusEl.textContent = message;
+    }
+
+    try {
+      // Initialize widget
+      const widget = ChatbotWidget.init({
+        projectId: 'demo',
+        endpoints: {
+          websocket: 'wss://echo.websocket.org',
+        },
+        bot: {
+          name: 'Soporte Cobranzas',
+          welcomeMessage: 'Buenos dias. Soy Cobranzas, tu asistente virtual...',
+          typingDelay: 1000,
+        },
+        theme: {
+          mode: 'auto',
+          colors: {
+            primary: '#0056b3',
+          },
+        },
+        position: 'bottom-right',
+        autoOpen: false,
+        features: {
+          attachments: true,
+          emoji: true,
+          darkMode: true,
+        },
+        onReady: () => {
+          console.log('Chatbot Widget ready!');
+          setStatus('success', 'Widget cargado correctamente. Haz clic en el boton azul de la esquina inferior derecha.');
+
+          // Add demo messages
+          setTimeout(() => {
+            useChatStore.getState().addMessage({
+              id: '1',
+              type: 'system',
+              sender: 'system',
+              content: 'Hoy',
+              timestamp: new Date(),
+              status: 'read',
+            });
+
+            useChatStore.getState().addMessage({
+              id: '2',
+              type: 'text',
+              sender: 'bot',
+              content: 'Buenos dias. Soy Cobranzas, tu asistente virtual...',
+              timestamp: new Date(),
+              status: 'read',
+            });
+
+            useChatStore.getState().addMessage({
+              id: '3',
+              type: 'options',
+              sender: 'bot',
+              content: '**Escriba** o **seleccione** una de las siguientes opciones:',
+              timestamp: new Date(),
+              status: 'read',
+              options: {
+                buttons: [
+                  { id: 'opt1', label: 'Opcion 1', value: 1 },
+                  { id: 'opt2', label: 'Opcion 2', value: 2 },
+                  { id: 'opt3', label: 'Opcion 3', value: 3 },
+                  { id: 'opt4', label: 'Opcion 4', value: 4 },
+                ],
+                columns: 2,
+              },
+            });
+          }, 300);
+        },
+        onError: (error) => {
+          console.error('Chatbot Widget error:', error);
+          setStatus('error', 'Error: ' + error.message);
+        },
+      });
+
+      // Expose globally for debugging
+      window.ChatbotWidget = ChatbotWidget;
+
+      // Button handlers
+      document.getElementById('btn-open').addEventListener('click', () => {
+        ChatbotWidget.getInstance()?.open();
+      });
+
+      document.getElementById('btn-close').addEventListener('click', () => {
+        ChatbotWidget.getInstance()?.close();
+      });
+
+      document.getElementById('btn-toggle').addEventListener('click', () => {
+        ChatbotWidget.getInstance()?.toggle();
+      });
+
+      let isDark = false;
+      document.getElementById('btn-theme').addEventListener('click', () => {
+        isDark = !isDark;
+        ChatbotWidget.getInstance()?.setThemeMode(isDark ? 'dark' : 'light');
+      });
+
+    } catch (error) {
+      console.error('Failed to initialize widget:', error);
+      setStatus('error', 'Error al cargar: ' + error.message);
+    }
+  </script>
+</body>
+</html>
