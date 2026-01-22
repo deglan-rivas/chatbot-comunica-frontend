@@ -120,7 +120,7 @@ class ChatbotWidget {
     this.websocketService = new WebSocketService(
       {
         url: config.endpoints.websocket,
-        sessionToken: useChatStore.getState().sessionToken,
+        userId: useChatStore.getState().userId,
       },
       {
         onConnect: () => useChatStore.getState().setConnectionStatus('connected'),
@@ -128,6 +128,7 @@ class ChatbotWidget {
           useChatStore.getState().setConnectionStatus('disconnected'),
         onError: () => useChatStore.getState().setConnectionStatus('error'),
         onMessage: (message) => {
+          useChatStore.getState().setTyping(false);
           useChatStore.getState().addMessage(message);
           if (!useUIStore.getState().isOpen) {
             useUIStore.getState().setHasUnread(true);
@@ -137,15 +138,15 @@ class ChatbotWidget {
       }
     );
 
-    // Initialize Plugin Manager
+    // Initialize Plugin Manager (WebSocket emit/on not supported with native WebSocket)
     this.pluginManager = new PluginManager({
       store: {
         chat: useChatStore.getState(),
         config: useConfigStore.getState(),
         ui: useUIStore.getState(),
       },
-      emit: (event, payload) => this.websocketService?.emit(event, payload),
-      on: (event, handler) => this.websocketService?.on(event, handler) ?? (() => {}),
+      emit: () => {}, // Not supported with native WebSocket
+      on: () => () => {}, // Not supported with native WebSocket
     });
 
     // Mount React
