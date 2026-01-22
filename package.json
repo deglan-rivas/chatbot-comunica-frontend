@@ -1,0 +1,52 @@
+{
+  "name": "chatbot-widget",
+  "version": "1.0.0",
+  "description": "Chatbot widget embebible estilo WhatsApp",
+  "type": "module",
+  "main": "./dist/chatbot-widget.umd.js",
+  "module": "./dist/chatbot-widget.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/chatbot-widget.es.js",
+      "require": "./dist/chatbot-widget.umd.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "chatbot",
+    "widget",
+    "whatsapp",
+    "react"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "socket.io-client": "^4.8.3",
+    "zod": "^4.3.5",
+    "zustand": "^5.0.10"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-css-injected-by-js": "^3.5.2"
+  }
+}
