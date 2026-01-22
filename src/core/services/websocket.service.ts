@@ -1,11 +1,17 @@
-import { io, type Socket } from 'socket.io-client';
 import type { Message } from '@core/types/message.types';
+import type {
+  BackendRequest,
+  BackendResponse,
+  ResponseRich,
+  BackendAction,
+} from '@core/types/backend.types';
+import { generateId } from '@core/utils';
 
 export type WebSocketEventHandler<T = unknown> = (data: T) => void;
 
 export interface WebSocketConfig {
   url: string;
-  sessionToken?: string | null;
+  userId?: string;
   autoReconnect?: boolean;
   reconnectionAttempts?: number;
   reconnectionDelay?: number;
@@ -21,10 +27,12 @@ export interface WebSocketEvents {
 }
 
 export class WebSocketService {
-  private socket: Socket | null = null;
+  private ws: WebSocket | null = null;
   private config: WebSocketConfig;
   private events: WebSocketEvents;
   private reconnectAttempt = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private userId: string;
 
   constructor(config: WebSocketConfig, events: WebSocketEvents = {}) {
     this.config = {
@@ -34,93 +42,251 @@ export class WebSocketService {
       ...config,
     };
     this.events = events;
+    this.userId = config.userId || this.getOrCreateUserId();
+  }
+
+  private getOrCreateUserId(): string {
+    const storageKey = 'chatbot-user-id';
+    let userId = localStorage.getItem(storageKey);
+    if (!userId) {
+      userId = crypto.randomUUID();
+      localStorage.setItem(storageKey, userId);
+    }
+    return userId;
   }
 
   connect(): void {
-    if (this.socket?.connected) return;
+    if (this.ws?.readyState === WebSocket.OPEN) return;
 
-    this.socket = io(this.config.url, {
-      transports: ['websocket', 'polling'],
-      auth: {
-        sessionToken: this.config.sessionToken,
-      },
-      reconnection: this.config.autoReconnect,
-      reconnectionAttempts: this.config.reconnectionAttempts,
-      reconnectionDelay: this.config.reconnectionDelay,
-    });
-
-    this.setupListeners();
-  }
-
-  private setupListeners(): void {
-    if (!this.socket) return;
-
-    this.socket.on('connect', () => {
-      this.reconnectAttempt = 0;
-      this.events.onConnect?.();
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      this.events.onDisconnect?.(reason);
-    });
-
-    this.socket.on('connect_error', (error) => {
-      this.events.onError?.(error);
-    });
-
-    this.socket.on('message', (message: Message) => {
-      this.events.onMessage?.(message);
-    });
-
-    this.socket.on('typing', (isTyping: boolean) => {
-      this.events.onTyping?.(isTyping);
-    });
-
-    this.socket.io.on('reconnect_attempt', (attempt) => {
-      this.reconnectAttempt = attempt;
-      this.events.onReconnect?.(attempt);
-    });
-  }
-
-  disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
+    try {
+      this.ws = new WebSocket(this.config.url);
+      this.setupListeners();
+    } catch (error) {
+      this.events.onError?.(error as Error);
+      this.scheduleReconnect();
     }
   }
 
-  sendMessage(message: Partial<Message>): void {
-    this.socket?.emit('message', message);
-  }
+  private setupListeners(): void {
+    if (!this.ws) return;
 
-  sendTyping(isTyping: boolean): void {
-    this.socket?.emit('typing', isTyping);
-  }
+    this.ws.onopen = () => {
+      this.reconnectAttempt = 0;
+      this.events.onConnect?.();
+    };
 
-  emit(event: string, data: unknown): void {
-    this.socket?.emit(event, data);
-  }
+    this.ws.onclose = (event) => {
+      this.events.onDisconnect?.(event.reason || 'closed');
+      this.scheduleReconnect();
+    };
 
-  on<T>(event: string, handler: WebSocketEventHandler<T>): () => void {
-    this.socket?.on(event, handler);
-    return () => {
-      this.socket?.off(event, handler);
+    this.ws.onerror = () => {
+      this.events.onError?.(new Error('WebSocket connection error'));
+    };
+
+    this.ws.onmessage = (event) => {
+      try {
+        const data: BackendResponse = JSON.parse(event.data);
+        const message = this.transformResponse(data);
+        this.events.onMessage?.(message);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
     };
   }
 
+  private scheduleReconnect(): void {
+    if (
+      !this.config.autoReconnect ||
+      this.reconnectAttempt >= (this.config.reconnectionAttempts ?? 5)
+    ) {
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectAttempt++;
+      this.events.onReconnect?.(this.reconnectAttempt);
+      this.connect();
+    }, this.config.reconnectionDelay);
+  }
+
+  disconnect(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+  }
+
+  sendMessage(text: string): void {
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      console.warn('WebSocket is not connected');
+      return;
+    }
+
+    const request: BackendRequest = {
+      user_id: this.userId,
+      message: text,
+    };
+
+    this.ws.send(JSON.stringify(request));
+  }
+
+  private transformResponse(data: BackendResponse): Message {
+    const rich = data.response_rich;
+    const baseMessage = {
+      id: generateId(),
+      sender: 'bot' as const,
+      timestamp: new Date(data.timestamp || Date.now()),
+      status: 'read' as const,
+      metadata: {
+        conversationActive: data.conversation_active,
+        responseRich: rich,
+      },
+    };
+
+    // Transform based on response_rich type
+    return this.transformRichResponse(rich, baseMessage);
+  }
+
+  private transformRichResponse(
+    rich: ResponseRich,
+    baseMessage: Omit<Message, 'type' | 'content'>
+  ): Message {
+    const content = rich.content?.text || '';
+
+    switch (rich.type) {
+      case 'text':
+        return {
+          ...baseMessage,
+          type: 'text',
+          content,
+        };
+
+      case 'menu':
+      case 'buttons':
+        return {
+          ...baseMessage,
+          type: 'options',
+          content,
+          options: {
+            buttons: (rich.actions || []).map((action: BackendAction, index: number) => ({
+              id: `btn-${index}`,
+              label: action.label,
+              value: action.value,
+              variant: this.mapButtonStyle(action.style),
+            })),
+            columns: 2,
+          },
+        };
+
+      case 'list':
+        return {
+          ...baseMessage,
+          type: 'options',
+          content: rich.content?.title || content,
+          options: {
+            buttons: (rich.items || []).map((item) => ({
+              id: item.id,
+              label: item.title,
+              value: item.value,
+              variant: 'secondary' as const,
+            })),
+            columns: 1,
+          },
+          metadata: {
+            ...baseMessage.metadata,
+            listItems: rich.items,
+            subtitle: rich.content?.subtitle,
+          },
+        };
+
+      case 'card':
+        return {
+          ...baseMessage,
+          type: 'options',
+          content: this.formatCardContent(rich),
+          options: rich.actions
+            ? {
+                buttons: rich.actions.map((action: BackendAction, index: number) => ({
+                  id: `btn-${index}`,
+                  label: action.label,
+                  value: action.value,
+                  variant: this.mapButtonStyle(action.style),
+                })),
+                columns: 2,
+              }
+            : undefined,
+        };
+
+      case 'form':
+        return {
+          ...baseMessage,
+          type: 'text',
+          content,
+          metadata: {
+            ...baseMessage.metadata,
+            formInput: rich.input,
+          },
+        };
+
+      default:
+        // Fallback to text
+        return {
+          ...baseMessage,
+          type: 'text',
+          content: content || 'Mensaje no reconocido',
+        };
+    }
+  }
+
+  private mapButtonStyle(style: string): 'primary' | 'secondary' | 'outline' {
+    switch (style) {
+      case 'primary':
+        return 'primary';
+      case 'danger':
+        return 'primary'; // Map danger to primary for now
+      case 'secondary':
+      default:
+        return 'secondary';
+    }
+  }
+
+  private formatCardContent(rich: ResponseRich): string {
+    const parts: string[] = [];
+    if (rich.content?.title) {
+      parts.push(`**${rich.content.title}**`);
+    }
+    if (rich.content?.subtitle) {
+      parts.push(`_${rich.content.subtitle}_`);
+    }
+    if (rich.content?.text) {
+      parts.push(rich.content.text);
+    }
+    return parts.join('\n\n');
+  }
+
   get isConnected(): boolean {
-    return this.socket?.connected ?? false;
+    return this.ws?.readyState === WebSocket.OPEN;
   }
 
   get reconnectionAttempts(): number {
     return this.reconnectAttempt;
   }
 
-  updateSessionToken(token: string): void {
-    this.config.sessionToken = token;
-    if (this.socket) {
-      this.socket.auth = { sessionToken: token };
-    }
+  getUserId(): string {
+    return this.userId;
+  }
+
+  setEvents(events: WebSocketEvents): void {
+    this.events = events;
   }
 }
 

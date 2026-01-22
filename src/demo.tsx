@@ -11,6 +11,9 @@ function setStatus(type: string, message: string) {
   }
 }
 
+// Get WebSocket URL from environment variable
+const websocketUrl = import.meta.env.VITE_WEBSOCKET_URL || 'ws://192.168.27.228:8001/api/web/chat/ws';
+
 // Initialize widget
 try {
   // Clear previous messages to avoid duplicates on hot reload
@@ -19,19 +22,20 @@ try {
   ChatbotWidget.init({
     projectId: 'demo',
     endpoints: {
-      websocket: 'wss://echo.websocket.org',
+      websocket: websocketUrl,
     },
     bot: {
-      name: 'Soporte Cobranzas',
-      welcomeMessage: 'Buenos dias. Soy Cobranzas, tu asistente virtual...',
+      name: 'Asistente JNE',
+      welcomeMessage: 'Bienvenido al Jurado Nacional de Elecciones. En que puedo ayudarte?',
     },
     position: 'bottom-right',
     autoOpen: false,
     onReady: () => {
       console.log('Chatbot Widget ready!');
+      console.log('WebSocket URL:', websocketUrl);
       setStatus('success', 'Widget cargado. Haz clic en el boton azul de la esquina inferior derecha.');
 
-      // Add demo messages with unique IDs
+      // Add initial system message
       setTimeout(() => {
         useChatStore.getState().addMessage({
           id: generateId(),
@@ -40,33 +44,6 @@ try {
           content: 'Hoy',
           timestamp: new Date(),
           status: 'read',
-        });
-
-        useChatStore.getState().addMessage({
-          id: generateId(),
-          type: 'text',
-          sender: 'bot',
-          content: 'Buenos dias. Soy Cobranzas, tu asistente virtual...',
-          timestamp: new Date(),
-          status: 'read',
-        });
-
-        useChatStore.getState().addMessage({
-          id: generateId(),
-          type: 'options',
-          sender: 'bot',
-          content: '**Escriba** o **seleccione** una de las siguientes opciones:',
-          timestamp: new Date(),
-          status: 'read',
-          options: {
-            buttons: [
-              { id: 'opt1', label: 'Opcion 1', value: 1 },
-              { id: 'opt2', label: 'Opcion 2', value: 2 },
-              { id: 'opt3', label: 'Opcion 3', value: 3 },
-              { id: 'opt4', label: 'Opcion 4', value: 4 },
-            ],
-            columns: 2,
-          },
         });
       }, 300);
     },

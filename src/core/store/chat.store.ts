@@ -9,6 +9,7 @@ export interface ChatState {
   isTyping: boolean;
   connectionStatus: ConnectionStatus;
   sessionToken: string | null;
+  userId: string;
 }
 
 export interface ChatActions {
@@ -24,11 +25,22 @@ export interface ChatActions {
 
 export type ChatStore = ChatState & ChatActions;
 
+function getOrCreateUserId(): string {
+  const storageKey = 'chatbot-user-id';
+  let userId = localStorage.getItem(storageKey);
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem(storageKey, userId);
+  }
+  return userId;
+}
+
 const initialState: ChatState = {
   messages: [],
   isTyping: false,
   connectionStatus: 'disconnected',
   sessionToken: null,
+  userId: getOrCreateUserId(),
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -84,6 +96,7 @@ export const useChatStore = create<ChatStore>()(
       partialize: (state) => ({
         messages: state.messages.slice(-50),
         sessionToken: state.sessionToken,
+        userId: state.userId,
       }),
     }
   )
