@@ -185,6 +185,10 @@ export class WebSocketService {
             })),
             columns: 2,
           },
+          metadata: {
+            ...baseMessage.metadata,
+            title: rich.content?.title,
+          },
         };
 
       case 'list':
