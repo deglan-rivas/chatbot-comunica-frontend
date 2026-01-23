@@ -32,17 +32,42 @@ try {
       console.log('WebSocket URL:', websocketUrl);
       setStatus('success', 'Widget cargado. Haz clic en el boton azul de la esquina inferior derecha.');
 
-      // Add initial system message only if there are no previous messages
+      // Add initial messages only if there are no previous messages
       const currentMessages = useChatStore.getState().messages;
       if (currentMessages.length === 0) {
         setTimeout(() => {
-          useChatStore.getState().addMessage({
+          const store = useChatStore.getState();
+
+          // 1. Add "Hoy" system message
+          store.addMessage({
             id: generateId(),
             type: 'system',
             sender: 'system',
             content: 'Hoy',
             timestamp: new Date(),
             status: 'read',
+          });
+
+          // 2. Add welcome message from bot
+          store.addMessage({
+            id: generateId(),
+            type: 'options',
+            sender: 'bot',
+            content: '🤖 **¡Hola! Soy ELECCIA, tu asistente virtual del JNE**\n\n👋 **Bienvenido/a al Jurado Nacional de Elecciones** ¿En qué puedo ayudarte hoy?\n\n💡 **Comandos útiles:**\n• Escribe **\'menu\'** para volver al menú principal en cualquier momento\n• Escribe **\'adios\'** para cerrar la conversación y finalizar',
+            timestamp: new Date(),
+            status: 'read',
+            options: {
+              buttons: [
+                { id: 'btn-1', label: '1. Procesos Electorales', value: '1', variant: 'primary' },
+                { id: 'btn-2', label: '2. Organizaciones Políticas', value: '2', variant: 'primary' },
+                { id: 'btn-3', label: '3. Información Institucional', value: '3', variant: 'primary' },
+                { id: 'btn-4', label: '4. Servicios Digitales', value: '4', variant: 'primary' },
+              ],
+              columns: 1,
+            },
+            metadata: {
+              title: 'Menú principal:',
+            },
           });
         }, 300);
       }
