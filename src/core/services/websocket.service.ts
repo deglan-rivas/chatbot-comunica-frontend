@@ -87,6 +87,29 @@ export class WebSocketService {
     this.ws.onmessage = (event) => {
       try {
         const data: BackendResponse = JSON.parse(event.data);
+        console.log('[WebSocket] Raw message received:', data);
+
+        // Ignorar mensajes de sistema del backend (ej: "Conexión restablecida")
+        if (data.type === 'system') {
+          console.log('[WebSocket] Ignoring system message from backend');
+          return;
+        }
+
+        // Validate response_rich exists
+        if (!data.response_rich) {
+          console.warn('[WebSocket] Message without response_rich, using content as fallback');
+          const fallbackMessage: Message = {
+            id: generateId(),
+            type: 'text',
+            sender: 'bot',
+            content: data.content || 'Mensaje recibido',
+            timestamp: new Date(data.timestamp || Date.now()),
+            status: 'read',
+          };
+          this.events.onMessage?.(fallbackMessage);
+          return;
+        }
+
         const message = this.transformResponse(data);
         this.events.onMessage?.(message);
       } catch (error) {
