@@ -16,9 +16,6 @@ const websocketUrl = import.meta.env.VITE_WEBSOCKET_URL || 'ws://192.168.27.228:
 
 // Initialize widget
 try {
-  // Clear previous messages to avoid duplicates on hot reload
-  useChatStore.getState().clearMessages();
-
   ChatbotWidget.init({
     projectId: 'demo',
     endpoints: {
@@ -35,17 +32,20 @@ try {
       console.log('WebSocket URL:', websocketUrl);
       setStatus('success', 'Widget cargado. Haz clic en el boton azul de la esquina inferior derecha.');
 
-      // Add initial system message
-      setTimeout(() => {
-        useChatStore.getState().addMessage({
-          id: generateId(),
-          type: 'system',
-          sender: 'system',
-          content: 'Hoy',
-          timestamp: new Date(),
-          status: 'read',
-        });
-      }, 300);
+      // Add initial system message only if there are no previous messages
+      const currentMessages = useChatStore.getState().messages;
+      if (currentMessages.length === 0) {
+        setTimeout(() => {
+          useChatStore.getState().addMessage({
+            id: generateId(),
+            type: 'system',
+            sender: 'system',
+            content: 'Hoy',
+            timestamp: new Date(),
+            status: 'read',
+          });
+        }, 300);
+      }
     },
     onError: (error: Error) => {
       console.error('Chatbot Widget error:', error);
