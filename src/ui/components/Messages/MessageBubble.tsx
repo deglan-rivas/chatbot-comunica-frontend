@@ -29,6 +29,7 @@ export function MessageBubble({
   const isUser = message.sender === 'user';
   const isBot = message.sender === 'bot';
   const isSystem = message.sender === 'system';
+  const title = message.metadata?.title as string | undefined;
 
   if (isSystem) {
     return (
@@ -74,6 +75,12 @@ export function MessageBubble({
           <div className="mt-2">
             <VideoPlayer attachment={message.attachment} />
           </div>
+        )}
+
+        {title && (
+          <p className="text-sm font-semibold text-primary mt-2 mb-1">
+            {title}
+          </p>
         )}
 
         {message.options && (
