@@ -49,6 +49,13 @@ src/
     └── hooks/          # Custom hooks
 ```
 
+## Documentacion
+
+| Documento | Descripcion |
+|-----------|-------------|
+| [docs/SETUP.md](./docs/SETUP.md) | Instrucciones para levantar el proyecto en desarrollo |
+| [docs/EXPORT.md](./docs/EXPORT.md) | Guia para integrar el widget en otro proyecto (React SPA o HTML vanilla) |
+
 ## Comandos
 
 ```bash
