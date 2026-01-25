@@ -35,5 +35,15 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    allowedHosts: [
+      '.trycloudflare.com',
+    ],
+    proxy: {
+      '/api/web/chat/ws': {
+        target: 'ws://192.168.27.228:8001',
+        ws: true,
+        changeOrigin: true,
+      },
+    },
   },
 });
