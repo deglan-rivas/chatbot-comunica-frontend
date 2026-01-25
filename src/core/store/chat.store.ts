@@ -25,11 +25,29 @@ export interface ChatActions {
 
 export type ChatStore = ChatState & ChatActions;
 
+function generateUUID(): string {
+  // crypto.randomUUID() solo funciona en contextos seguros (HTTPS o localhost)
+  // Usamos un fallback con crypto.getRandomValues() que sí funciona en HTTP
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback: generar UUID v4 manualmente
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  // Establecer versión 4 (bits 12-15 del byte 6)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  // Establecer variante (bits 6-7 del byte 8)
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  // Convertir a formato UUID
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function getOrCreateUserId(): string {
   const storageKey = 'chatbot-user-id';
   let userId = sessionStorage.getItem(storageKey);
   if (!userId) {
-    userId = crypto.randomUUID();
+    userId = generateUUID();
     sessionStorage.setItem(storageKey, userId);
   }
   return userId;
