@@ -27,10 +27,10 @@ export type ChatStore = ChatState & ChatActions;
 
 function getOrCreateUserId(): string {
   const storageKey = 'chatbot-user-id';
-  let userId = localStorage.getItem(storageKey);
+  let userId = sessionStorage.getItem(storageKey);
   if (!userId) {
     userId = crypto.randomUUID();
-    localStorage.setItem(storageKey, userId);
+    sessionStorage.setItem(storageKey, userId);
   }
   return userId;
 }
@@ -93,6 +93,18 @@ export const useChatStore = create<ChatStore>()(
     }),
     {
       name: 'chatbot-storage',
+      storage: {
+        getItem: (name) => {
+          const item = sessionStorage.getItem(name);
+          return item ? JSON.parse(item) : null;
+        },
+        setItem: (name, value) => {
+          sessionStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          sessionStorage.removeItem(name);
+        },
+      },
       partialize: (state) => ({
         messages: state.messages.slice(-50),
         sessionToken: state.sessionToken,

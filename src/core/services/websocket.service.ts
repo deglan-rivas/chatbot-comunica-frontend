@@ -47,10 +47,10 @@ export class WebSocketService {
 
   private getOrCreateUserId(): string {
     const storageKey = 'chatbot-user-id';
-    let userId = localStorage.getItem(storageKey);
+    let userId = sessionStorage.getItem(storageKey);
     if (!userId) {
       userId = crypto.randomUUID();
-      localStorage.setItem(storageKey, userId);
+      sessionStorage.setItem(storageKey, userId);
     }
     return userId;
   }
