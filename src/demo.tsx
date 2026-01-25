@@ -11,8 +11,23 @@ function setStatus(type: string, message: string) {
   }
 }
 
-// Get WebSocket URL from environment variable
-const websocketUrl = import.meta.env.VITE_WEBSOCKET_URL || 'ws://192.168.27.228:8001/api/web/chat/ws';
+// Get WebSocket URL - use proxy when on HTTPS in DEV to avoid mixed content
+function getWebSocketUrl(): string {
+  const envUrl = import.meta.env.VITE_WEBSOCKET_URL || 'ws://192.168.27.228:8001/api/web/chat/ws';
+  const appEnv = import.meta.env.VITE_APP_ENV || 'DEV';
+
+  // Use proxy only in DEV environment when on HTTPS (to avoid mixed content)
+  // In PRD, the backend should have its own SSL configured
+  if (appEnv === 'DEV' && window.location.protocol === 'https:') {
+    const wsProtocol = 'wss:';
+    return `${wsProtocol}//${window.location.host}/api/web/chat/ws`;
+  }
+
+  // In PRD or HTTP local development, use the direct URL from env
+  return envUrl;
+}
+
+const websocketUrl = getWebSocketUrl();
 
 // Initialize widget
 try {
@@ -22,7 +37,7 @@ try {
       websocket: websocketUrl,
     },
     bot: {
-      name: 'Asistente JNE',
+      name: 'Eleccia Comunicaciones',
       welcomeMessage: 'Bienvenido al Jurado Nacional de Elecciones. En que puedo ayudarte?',
     },
     position: 'bottom-right',
