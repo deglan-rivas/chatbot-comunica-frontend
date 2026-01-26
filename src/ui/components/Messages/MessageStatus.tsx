@@ -16,7 +16,7 @@ export function MessageStatus({ status }: MessageStatusProps) {
         </span>
       );
     case 'sent':
-      return <span className={cn(iconClass, 'text-gray-400')}>done</span>;
+      return <span className={cn(iconClass, 'text-gray-400')}>done_all</span>;
     case 'delivered':
       return <span className={cn(iconClass, 'text-gray-400')}>done_all</span>;
     case 'read':
