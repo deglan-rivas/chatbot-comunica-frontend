@@ -33,7 +33,7 @@ export const ChatBody = forwardRef<HTMLDivElement, ChatBodyProps>(
 
         {isTyping && <TypingIndicator />}
 
-        <div className="h-4" />
+        <div className="h-0" />
       </div>
     );
   }
