@@ -67,9 +67,39 @@ export const useChatStore = create<ChatStore>()(
       ...initialState,
 
       addMessage: (message) => {
-        set((state) => ({
-          messages: [...state.messages, message],
-        }));
+        set((state) => {
+          // Deshabilitar botones/opciones de todos los mensajes anteriores
+          const updatedMessages = state.messages.map((msg) => {
+            // Si el mensaje tiene opciones con botones, deshabilitarlos
+            if (msg.options?.buttons) {
+              return {
+                ...msg,
+                options: {
+                  ...msg.options,
+                  buttons: msg.options.buttons.map((btn) => ({
+                    ...btn,
+                    disabled: true,
+                  })),
+                },
+              };
+            }
+            // Si el mensaje tiene rating sin seleccionar, marcarlo como deshabilitado
+            if (msg.rating && msg.rating.selectedValue === undefined) {
+              return {
+                ...msg,
+                rating: {
+                  ...msg.rating,
+                  selectedValue: -1, // Marca especial para indicar que expiró sin selección
+                },
+              };
+            }
+            return msg;
+          });
+
+          return {
+            messages: [...updatedMessages, message],
+          };
+        });
       },
 
       updateMessageStatus: (id, status) => {
