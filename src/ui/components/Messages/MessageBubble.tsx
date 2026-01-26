@@ -17,7 +17,7 @@ function formatContent(content: string): string {
   return content
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-    .replace(/<a /g, '<a class="text-primary underline font-medium" ')
+    .replace(/<a /g, '<a class="text-primary underline font-medium" target="_blank" rel="noopener noreferrer" ')
     .replace(/\n/g, '<br/>');
 }
 
