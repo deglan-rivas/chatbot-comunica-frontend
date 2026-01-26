@@ -27,7 +27,7 @@ export function ButtonGroup({ options, onSelect, disabled = false }: ButtonGroup
             'disabled:opacity-50 disabled:cursor-not-allowed',
             button.variant === 'primary'
               ? 'bg-primary text-white border-primary hover:bg-primary/90'
-              : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-blue-300 border-primary/20 hover:bg-primary/20'
+              : 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-300 border-primary/20 hover:bg-primary/20'
           )}
         >
           {button.label}
