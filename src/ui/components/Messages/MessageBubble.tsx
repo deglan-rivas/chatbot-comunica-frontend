@@ -51,7 +51,7 @@ export function MessageBubble({
     >
       <div
         className={cn(
-          'p-3 rounded-2xl shadow-sm',
+          'p-3 rounded-2xl shadow-sm overflow-hidden',
           isUser &&
             'bg-user-bubble-light dark:bg-user-bubble-dark rounded-br-none',
           isBot && 'bg-bot-bubble-light dark:bg-bot-bubble-dark rounded-bl-none',
@@ -60,7 +60,7 @@ export function MessageBubble({
       >
         {message.content && (
           <p
-            className="text-sm text-gray-800 dark:text-gray-100"
+            className="text-sm text-gray-800 dark:text-gray-100 break-words overflow-hidden"
             dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
           />
         )}
