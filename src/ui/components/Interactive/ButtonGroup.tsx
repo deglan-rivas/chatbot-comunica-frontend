@@ -23,7 +23,7 @@ export function ButtonGroup({ options, onSelect, disabled = false }: ButtonGroup
           disabled={disabled || button.disabled}
           className={cn(
             'py-2 px-3 rounded-lg text-sm font-medium',
-            'border transition-colors',
+            'border transition-colors break-words',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             button.variant === 'primary'
               ? 'bg-primary text-white border-primary hover:bg-primary/90'

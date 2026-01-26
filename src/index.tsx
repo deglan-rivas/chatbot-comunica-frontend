@@ -437,6 +437,8 @@ class ChatbotWidget {
       /* Overflow */
       .overflow-hidden { overflow: hidden; }
       .overflow-y-auto { overflow-y: auto; }
+      .overflow-x-hidden { overflow-x: hidden; }
+      .break-words { overflow-wrap: break-word; word-break: break-word; }
 
       /* Transitions */
       .transition-all { transition-property: all; transition-timing-function: ease; transition-duration: 150ms; }

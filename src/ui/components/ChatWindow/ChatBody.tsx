@@ -17,7 +17,7 @@ export const ChatBody = forwardRef<HTMLDivElement, ChatBodyProps>(
       <div
         ref={ref}
         className={cn(
-          'flex-1 overflow-y-auto p-4 space-y-4',
+          'flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4',
           'bg-chat-bg-light dark:bg-chat-bg-dark',
           'scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700'
         )}
