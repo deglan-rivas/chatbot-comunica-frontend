@@ -192,7 +192,7 @@ class ChatbotWidget {
 
     return `
       :host {
-        --chatbot-primary: ${colors.primary ?? '#0056b3'};
+        --chatbot-primary: ${colors.primary ?? '#be1717'};
         --chatbot-bg-light: #F3F4F6;
         --chatbot-bg-dark: #111827;
         --chatbot-chat-bg-light: ${colors.background ?? '#E5DDD5'};
@@ -371,6 +371,7 @@ class ChatbotWidget {
       .dark .text-white { color: white; }
       .dark .text-green-400 { color: #4ADE80; }
       .dark .text-blue-300 { color: #93C5FD; }
+      .dark .text-red-300 { color: #FCA5A5; }
 
       .bg-white { background-color: white; }
       .bg-black { background-color: black; }

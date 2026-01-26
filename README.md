@@ -79,7 +79,7 @@ ChatbotWidget.init({
   },
   theme: {
     mode: 'auto', // 'light' | 'dark' | 'auto'
-    colors: { primary: '#0056b3' },
+    colors: { primary: '#be1717' },
   },
   position: 'bottom-right',
   autoOpen: false,

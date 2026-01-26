@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--chatbot-primary, #0056b3)',
+        primary: 'var(--chatbot-primary, #be1717)',
         'background-light': 'var(--chatbot-bg-light, #F3F4F6)',
         'background-dark': 'var(--chatbot-bg-dark, #111827)',
         'chat-bg-light': 'var(--chatbot-chat-bg-light, #E5DDD5)',

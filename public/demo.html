@@ -72,12 +72,12 @@
     }
 
     .demo-btn-primary {
-      background: #0056b3;
+      background: #be1717;
       color: white;
     }
 
     .demo-btn-primary:hover {
-      background: #004494;
+      background: #9a1212;
     }
 
     .demo-btn-secondary {
@@ -161,7 +161,7 @@
 
       <div class="demo-info">
         <p>
-          <strong>Nota:</strong> El boton azul flotante en la esquina inferior derecha es el widget.
+          <strong>Nota:</strong> El boton rojo flotante en la esquina inferior derecha es el widget.
           Haz clic en el para abrir el chat.
         </p>
       </div>
@@ -215,7 +215,7 @@ ChatbotWidget.init({
         theme: {
           mode: 'auto',
           colors: {
-            primary: '#0056b3',
+            primary: '#be1717',
           },
         },
         position: 'bottom-right',
@@ -227,7 +227,7 @@ ChatbotWidget.init({
         },
         onReady: () => {
           console.log('Chatbot Widget ready!');
-          setStatus('success', 'Widget cargado correctamente. Haz clic en el boton azul de la esquina inferior derecha.');
+          setStatus('success', 'Widget cargado correctamente. Haz clic en el boton rojo de la esquina inferior derecha.');
 
           // Add demo messages
           setTimeout(() => {
