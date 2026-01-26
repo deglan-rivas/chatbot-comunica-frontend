@@ -55,6 +55,10 @@
   outline: none;
 }
 
+.chatbot-widget input {
+  background-color: transparent !important;
+}
+
 .chatbot-widget input::placeholder {
   color: #9CA3AF;
 }

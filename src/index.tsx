@@ -233,6 +233,15 @@ class ChatbotWidget {
         border: none;
       }
 
+      input {
+        background-color: transparent;
+        border: none;
+      }
+
+      input:focus {
+        outline: none;
+      }
+
       /* Colors */
       .bg-primary { background-color: var(--chatbot-primary); }
       .text-primary { color: var(--chatbot-primary); }
@@ -276,12 +285,16 @@ class ChatbotWidget {
       .gap-2 { gap: 0.5rem; }
       .gap-3 { gap: 0.75rem; }
 
+      .space-y-4 > * + * { margin-top: 1rem; }
+      .space-y-6 > * + * { margin-top: 1.5rem; }
+
       .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
       .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
       /* Spacing */
       .p-1 { padding: 0.25rem; }
+      .p-2 { padding: 0.5rem; }
       .p-3 { padding: 0.75rem; }
       .p-4 { padding: 1rem; }
       .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }

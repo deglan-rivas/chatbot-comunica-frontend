@@ -112,9 +112,10 @@ export function ChatInput({
           disabled={disabled}
           placeholder={placeholder}
           className={cn(
-            'bg-transparent border-none focus:ring-0 text-sm w-full',
+            '!bg-transparent border-none focus:ring-0 focus:outline-none text-sm w-full',
             'text-gray-800 dark:text-gray-100 p-0 outline-none',
-            'placeholder:text-gray-400 dark:placeholder:text-gray-500'
+            'placeholder:text-gray-400 dark:placeholder:text-gray-500',
+            '[&]:bg-transparent'
           )}
         />
       </div>
