@@ -318,6 +318,7 @@ class ChatbotWidget {
       .w-8 { width: 2rem; }
       .w-10 { width: 2.5rem; }
       .w-14 { width: 3.5rem; }
+      .w-16 { width: 4rem; }
       .w-full { width: 100%; }
       .h-2 { height: 0.5rem; }
       .h-3 { height: 0.75rem; }
@@ -327,6 +328,7 @@ class ChatbotWidget {
       .h-8 { height: 2rem; }
       .h-10 { height: 2.5rem; }
       .h-14 { height: 3.5rem; }
+      .h-16 { height: 4rem; }
       .h-auto { height: auto; }
       .min-w-0 { min-width: 0; }
       .max-w-\\[250px\\] { max-width: 250px; }
@@ -425,6 +427,7 @@ class ChatbotWidget {
       .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
       .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
       .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+      .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
       .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
       .opacity-0 { opacity: 0; }
       .opacity-50 { opacity: 0.5; }
@@ -432,6 +435,8 @@ class ChatbotWidget {
 
       .hover\\:opacity-70:hover { opacity: 0.7; }
       .hover\\:scale-110:hover { transform: scale(1.1); }
+      .hover\\:shadow-2xl:hover { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+      .hover\\:brightness-105:hover { filter: brightness(1.05); }
       .active\\:scale-95:active { transform: scale(0.95); }
 
       /* Overflow */
