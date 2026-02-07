@@ -270,6 +270,7 @@ class ChatbotWidget {
       .z-50 { z-index: 50; }
 
       .flex { display: flex; }
+      .inline-flex { display: inline-flex; }
       .grid { display: grid; }
       .hidden { display: none; }
 
@@ -364,6 +365,7 @@ class ChatbotWidget {
       .leading-tight { line-height: 1.25; }
       .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .underline { text-decoration: underline; }
+      .text-left { text-align: left; }
       .text-right { text-align: right; }
 
       /* Colors */
@@ -395,6 +397,10 @@ class ChatbotWidget {
       .bg-gray-300 { background-color: #D1D5DB; }
       .bg-green-500 { background-color: #22C55E; }
       .bg-red-500 { background-color: #EF4444; }
+      .bg-red-50 { background-color: #fef2f2; }
+      .border-red-300 { border-color: #fca5a5; }
+      .dark .bg-red-950\\/30 { background-color: rgba(69, 10, 10, 0.3); }
+      .dark .border-red-600 { border-color: #dc2626; }
       .bg-white\\/50 { background-color: rgba(255, 255, 255, 0.5); }
 
       .dark .bg-gray-700 { background-color: #374151; }

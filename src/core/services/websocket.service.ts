@@ -87,17 +87,36 @@ export class WebSocketService {
     this.ws.onmessage = (event) => {
       try {
         const data: BackendResponse = JSON.parse(event.data);
-        console.log('[WebSocket] Raw message received:', data);
 
-        // Ignorar mensajes de sistema del backend (ej: "Conexión restablecida")
         if (data.type === 'system') {
-          console.log('[WebSocket] Ignoring system message from backend');
+          const systemMessage: Message = {
+            id: generateId(),
+            type: 'text',
+            sender: 'bot',
+            content: data.content || 'Conectado.',
+            timestamp: new Date(data.timestamp || Date.now()),
+            status: 'read',
+          };
+          this.events.onMessage?.(systemMessage);
           return;
         }
 
-        // Validate response_rich exists
+        if (data.type === 'error') {
+          const errorMessage: Message = {
+            id: generateId(),
+            type: 'text',
+            sender: 'bot',
+            content: data.content || 'Ha ocurrido un error.',
+            timestamp: new Date(data.timestamp || Date.now()),
+            status: 'read',
+            metadata: { isError: true, conversationId: data.state?.conversation_id },
+          };
+          this.events.onMessage?.(errorMessage);
+          return;
+        }
+
+        // type === 'message'
         if (!data.response_rich) {
-          console.warn('[WebSocket] Message without response_rich, using content as fallback');
           const fallbackMessage: Message = {
             id: generateId(),
             type: 'text',
@@ -105,6 +124,12 @@ export class WebSocketService {
             content: data.content || 'Mensaje recibido',
             timestamp: new Date(data.timestamp || Date.now()),
             status: 'read',
+            metadata: {
+              conversationId: data.state?.conversation_id,
+              confidence_level: data.confidence_level,
+              source: data.source,
+              disclaimer: data.disclaimer,
+            },
           };
           this.events.onMessage?.(fallbackMessage);
           return;
@@ -148,34 +173,39 @@ export class WebSocketService {
     }
   }
 
-  sendMessage(text: string): void {
+  sendMessage(text: string, opts?: { conversationId?: string; message_id?: string }): void {
     if (this.ws?.readyState !== WebSocket.OPEN) {
       console.warn('WebSocket is not connected');
       return;
     }
 
     const request: BackendRequest = {
-      user_id: this.userId,
-      message: text,
+      content: text,
+      conversation_id: opts?.conversationId,
+      message_id: opts?.message_id,
+      metadata: {},
     };
 
     this.ws.send(JSON.stringify(request));
   }
 
   private transformResponse(data: BackendResponse): Message {
-    const rich = data.response_rich;
+    const rich = data.response_rich!;
     const baseMessage = {
       id: generateId(),
       sender: 'bot' as const,
       timestamp: new Date(data.timestamp || Date.now()),
       status: 'read' as const,
       metadata: {
+        conversationId: data.state?.conversation_id,
         conversationActive: data.conversation_active,
         responseRich: rich,
+        confidence_level: data.confidence_level,
+        source: data.source,
+        disclaimer: data.disclaimer,
       },
     };
 
-    // Transform based on response_rich type
     return this.transformRichResponse(rich, baseMessage);
   }
 
@@ -205,6 +235,7 @@ export class WebSocketService {
               label: action.label,
               value: action.value,
               variant: this.mapButtonStyle(action.style),
+              action: action.action ?? undefined,
             })),
             columns: 2,
           },
@@ -218,7 +249,7 @@ export class WebSocketService {
         return {
           ...baseMessage,
           type: 'options',
-          content: rich.content?.title || content,
+          content: rich.content?.text ?? '',
           options: {
             buttons: (rich.items || []).map((item) => ({
               id: item.id,
@@ -230,8 +261,9 @@ export class WebSocketService {
           },
           metadata: {
             ...baseMessage.metadata,
+            listTitle: rich.content?.title,
             listItems: rich.items,
-            subtitle: rich.content?.subtitle,
+            listIntroText: rich.content?.text,
           },
         };
 
@@ -247,6 +279,7 @@ export class WebSocketService {
                   label: action.label,
                   value: action.value,
                   variant: this.mapButtonStyle(action.style),
+                  action: action.action ?? undefined,
                 })),
                 columns: 2,
               }
@@ -274,13 +307,14 @@ export class WebSocketService {
     }
   }
 
-  private mapButtonStyle(style: string): 'primary' | 'secondary' | 'outline' {
+  private mapButtonStyle(style?: string): 'primary' | 'secondary' | 'outline' {
     switch (style) {
       case 'primary':
         return 'primary';
       case 'danger':
-        return 'primary'; // Map danger to primary for now
+        return 'primary';
       case 'secondary':
+        return 'secondary';
       default:
         return 'secondary';
     }
