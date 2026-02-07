@@ -10,6 +10,8 @@ export interface ChatState {
   connectionStatus: ConnectionStatus;
   sessionToken: string | null;
   userId: string;
+  /** ID de conversación actual; se envía en los mensajes para mantener contexto entre reconexiones */
+  conversationId: string | null;
 }
 
 export interface ChatActions {
@@ -19,6 +21,7 @@ export interface ChatActions {
   setTyping: (isTyping: boolean) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setSessionToken: (token: string) => void;
+  setConversationId: (id: string | null) => void;
   clearMessages: () => void;
   reset: () => void;
 }
@@ -35,9 +38,9 @@ function generateUUID(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   // Establecer versión 4 (bits 12-15 del byte 6)
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
   // Establecer variante (bits 6-7 del byte 8)
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
   // Convertir a formato UUID
   const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
@@ -59,6 +62,7 @@ const initialState: ChatState = {
   connectionStatus: 'disconnected',
   sessionToken: null,
   userId: getOrCreateUserId(),
+  conversationId: null,
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -68,6 +72,12 @@ export const useChatStore = create<ChatStore>()(
 
       addMessage: (message) => {
         set((state) => {
+          // Guardar conversation_id cuando llega en un mensaje del bot
+          const nextConversationId =
+            message.sender === 'bot' && message.metadata?.conversationId != null
+              ? String(message.metadata.conversationId)
+              : state.conversationId;
+
           // Deshabilitar botones/opciones de todos los mensajes anteriores
           const updatedMessages = state.messages.map((msg) => {
             // Si el mensaje tiene opciones con botones, deshabilitarlos
@@ -97,10 +107,13 @@ export const useChatStore = create<ChatStore>()(
           });
 
           return {
+            conversationId: nextConversationId,
             messages: [...updatedMessages, message],
           };
         });
       },
+
+      setConversationId: (conversationId) => set({ conversationId }),
 
       updateMessageStatus: (id, status) => {
         set((state) => ({
@@ -153,11 +166,13 @@ export const useChatStore = create<ChatStore>()(
           sessionStorage.removeItem(name);
         },
       },
-      partialize: (state) => ({
-        messages: state.messages.slice(-50),
-        sessionToken: state.sessionToken,
-        userId: state.userId,
-      }),
+      partialize: (state) =>
+        ({
+          messages: state.messages.slice(-50),
+          sessionToken: state.sessionToken,
+          userId: state.userId,
+          conversationId: state.conversationId,
+        }) as ChatStore,
     }
   )
 );

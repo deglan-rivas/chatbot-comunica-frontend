@@ -22,6 +22,7 @@ export function Widget({ websocketService }: WidgetProps) {
     messages,
     isTyping,
     connectionStatus,
+    conversationId,
     addMessage,
     updateMessageStatus,
     updateMessageOptions,
@@ -78,17 +79,34 @@ export function Widget({ websocketService }: WidgetProps) {
 
       addMessage(message);
       setTyping(true);
-      websocketService.sendMessage(text);
+      websocketService.sendMessage(text, { conversationId: conversationId ?? undefined });
 
       setTimeout(() => {
         updateMessageStatus(message.id, 'sent');
       }, 300);
     },
-    [addMessage, updateMessageStatus, setTyping, websocketService]
+    [addMessage, updateMessageStatus, setTyping, websocketService, conversationId]
   );
 
   const handleButtonClick = useCallback(
     (messageId: string, button: MessageButton) => {
+      const message = messages.find((m) => m.id === messageId);
+      const listItems = message?.metadata?.listItems as Array<{ id: string; enlace?: string; value: string }> | undefined;
+      const listItem = listItems?.find((i) => i.id === button.id);
+
+      if (listItem?.enlace) {
+        window.open(listItem.enlace, '_blank');
+        updateMessageOptions(messageId, button.value);
+        return;
+      }
+
+      const isLink = button.action === 'open_link' || (typeof button.value === 'string' && /^https?:\/\//i.test(button.value));
+      if (isLink) {
+        window.open(String(button.value), '_blank');
+        updateMessageOptions(messageId, button.value);
+        return;
+      }
+
       updateMessageOptions(messageId, button.value);
 
       const response: Message = {
@@ -102,14 +120,13 @@ export function Widget({ websocketService }: WidgetProps) {
 
       addMessage(response);
       setTyping(true);
-      // Send the button value as text to the backend
-      websocketService.sendMessage(String(button.value));
+      websocketService.sendMessage(String(button.value), { conversationId: conversationId ?? undefined });
 
       setTimeout(() => {
         updateMessageStatus(response.id, 'sent');
       }, 300);
     },
-    [addMessage, updateMessageOptions, updateMessageStatus, setTyping, websocketService]
+    [addMessage, updateMessageOptions, updateMessageStatus, setTyping, websocketService, conversationId, messages]
   );
 
   const handleRatingSubmit = useCallback(
@@ -136,13 +153,13 @@ export function Widget({ websocketService }: WidgetProps) {
 
       addMessage(response);
       setTyping(true);
-      websocketService.sendMessage(String(rating));
+      websocketService.sendMessage(String(rating), { conversationId: conversationId ?? undefined });
 
       setTimeout(() => {
         updateMessageStatus(response.id, 'sent');
       }, 300);
     },
-    [messages, addMessage, updateMessageStatus, setTyping, websocketService]
+    [messages, addMessage, updateMessageStatus, setTyping, websocketService, conversationId]
   );
 
   // Backend does not support typing indicators, so this is a no-op
