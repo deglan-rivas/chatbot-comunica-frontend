@@ -16,9 +16,52 @@ Todos los mensajes deben incluir:
 
 ---
 
-## 2. Tipos de mensaje
+## 2. Formato de texto enriquecido (Markdown)
 
-### 2.1 `type: "system"`
+Los campos de texto que el backend envía (`content`, `response_rich.content.text`, `response_rich.content.title`, `response_rich.content.subtitle`, `description` en ítems, etc.) pueden incluir **Markdown** para que el frontend renderice correctamente títulos, negrita, cursiva, listas y enlaces.
+
+| Formato   | Sintaxis Markdown   | Ejemplo de salida |
+|-----------|---------------------|-------------------|
+| **Negrita** | `**texto**` o `__texto__` | **texto** |
+| *Cursiva* | `*texto*` o `_texto_` | *texto* |
+| ~~Tachado~~ | `~~texto~~` | ~~texto~~ |
+| Título nivel 1 | `# Título` | Título grande (H1) |
+| Título nivel 2 | `## Subtítulo` | Subtítulo (H2) |
+| Título nivel 3 | `### Sección` | Sección (H3) |
+| Lista con viñetas | `- ítem` o `* ítem` | • ítem |
+| Lista numerada | `1. ítem` | 1. ítem |
+| Enlace | `[texto](url)` | [texto](url) clicable |
+| Salto de línea | `\n` | Nueva línea |
+| Código inline | `` `código` `` | `código` |
+
+**Reglas:**
+
+- El frontend interpreta estos campos como **Markdown** (compatible con CommonMark / GitHub Flavored Markdown).
+- Si el backend envía texto plano sin Markdown, se muestra tal cual.
+- Para evitar interpretación como Markdown (caracteres especiales literales), el backend puede escapar o enviar texto sin `*`, `#`, etc., según necesidad.
+
+**Ejemplo en un mensaje:**
+
+```json
+{
+  "type": "message",
+  "content": "## Proceso Electoral 2026\n\n**Requisitos:**\n- Ser mayor de 18 años\n- DNI vigente\n\n_Consulta el cronograma_ en [JNE](https://www.jne.gob.pe).",
+  "response_rich": {
+    "type": "text",
+    "content": {
+      "text": "## Proceso Electoral 2026\n\n**Requisitos:**\n- Ser mayor de 18 años\n- DNI vigente\n\n_Consulta el cronograma_ en [JNE](https://www.jne.gob.pe)."
+    }
+  }
+}
+```
+
+**Render:** el frontend mostrará el texto con subtítulo (H2), “Requisitos” en negrita, lista con viñetas, “Consulta el cronograma” en cursiva y un enlace clicable a JNE.
+
+---
+
+## 3. Tipos de mensaje
+
+### 3.1 `type: "system"`
 
 Mensaje de sistema (ej. bienvenida al conectar). Solo se muestra el texto.
 
@@ -36,7 +79,7 @@ Mensaje de sistema (ej. bienvenida al conectar). Solo se muestra el texto.
 
 ---
 
-### 2.2 `type: "error"`
+### 3.2 `type: "error"`
 
 Error procesable (ej. fallo al responder). Se muestra con estilo de error.
 
@@ -54,7 +97,7 @@ Error procesable (ej. fallo al responder). Se muestra con estilo de error.
 
 ---
 
-### 2.3 `type: "message"`
+### 3.3 `type: "message"`
 
 Respuesta del bot. Puede ser solo texto o incluir `response_rich` para menús, listas, tarjetas, etc.
 
@@ -81,11 +124,11 @@ Respuesta del bot. Puede ser solo texto o incluir `response_rich` para menús, l
 
 **Render:** burbuja del bot con `content`. Si viene `disclaimer`, se muestra debajo en pequeño.
 
-**Ejemplo con `response_rich`:** ver sección 3.
+**Ejemplo con `response_rich`:** ver sección 4.
 
 ---
 
-## 3. `response_rich` (solo cuando `type === "message"`)
+## 4. `response_rich` (solo cuando `type === "message"`)
 
 Si el mensaje incluye `response_rich`, el frontend usa su `type` para elegir el componente (texto, menú, botones, lista, tarjeta). Si no hay `response_rich`, se muestra solo `content`.
 
@@ -106,7 +149,7 @@ Estructura base:
 
 ---
 
-### 3.1 `response_rich.type: "text"`
+### 4.1 `response_rich.type: "text"`
 
 Solo texto. Se muestra `content.text` (o el `content` del mensaje).
 
@@ -123,7 +166,7 @@ Solo texto. Se muestra `content.text` (o el `content` del mensaje).
 
 ---
 
-### 3.2 `response_rich.type: "menu"`
+### 4.2 `response_rich.type: "menu"`
 
 Menú de opciones (ej. menú principal). Cada opción es un botón; al hacer clic se envía su `value` por WebSocket.
 
@@ -157,7 +200,7 @@ Menú de opciones (ej. menú principal). Cada opción es un botón; al hacer cli
 
 ---
 
-### 3.3 `response_rich.type: "buttons"`
+### 4.3 `response_rich.type: "buttons"`
 
 Pocos botones (ej. Sí/No). Misma estructura de `actions` que en `menu`.
 
@@ -178,7 +221,7 @@ Pocos botones (ej. Sí/No). Misma estructura de `actions` que en `menu`.
 
 ---
 
-### 3.4 `response_rich.type: "list"`
+### 4.4 `response_rich.type: "list"`
 
 Lista de ítems (ej. varios servicios). Cada ítem puede tener enlace; si tiene `enlace`, al clic se abre en nueva pestaña; si no, se envía `value`.
 
@@ -226,7 +269,11 @@ Lista de ítems (ej. varios servicios). Cada ítem puede tener enlace; si tiene 
 
 ---
 
-### 3.5 `response_rich.type: "card"`
+**Texto intro (`content.text`):** Debe ser el texto completo que se muestra arriba de las tarjetas (puede incluir Markdown). Si el backend envía el texto completo en el `content` raíz y en `response_rich.content.text` una versión truncada, el frontend usará el `content` raíz cuando sea más largo. **Recomendación:** enviar el mismo texto completo en ambos para consistencia.
+
+---
+
+### 4.5 `response_rich.type: "card"`
 
 Una sola tarjeta (ej. un servicio o funcionario). Incluye título, subtítulo, texto y botones.
 
@@ -256,7 +303,7 @@ Una sola tarjeta (ej. un servicio o funcionario). Incluye título, subtítulo, t
 
 ---
 
-## 4. Resumen de render por tipo
+## 5. Resumen de render por tipo
 
 | `type` (raíz) | `response_rich`      | Qué se muestra |
 |---------------|----------------------|----------------|
@@ -271,7 +318,7 @@ Una sola tarjeta (ej. un servicio o funcionario). Incluye título, subtítulo, t
 
 ---
 
-## 5. Tipos TypeScript (referencia)
+## 6. Tipos TypeScript (referencia)
 
 Los contratos están definidos en `src/core/types/backend.types.ts`:
 

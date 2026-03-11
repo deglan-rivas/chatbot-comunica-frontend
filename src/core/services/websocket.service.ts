@@ -206,14 +206,19 @@ export class WebSocketService {
       },
     };
 
-    return this.transformRichResponse(rich, baseMessage);
+    return this.transformRichResponse(rich, baseMessage, data);
   }
 
   private transformRichResponse(
     rich: ResponseRich,
-    baseMessage: Omit<Message, 'type' | 'content'>
+    baseMessage: Omit<Message, 'type' | 'content'>,
+    data: BackendResponse
   ): Message {
-    const content = rich.content?.text || '';
+    // Para listas: si el content raíz es más largo, usarlo como intro (evita texto truncado en response_rich.content.text)
+    const rootContent = data.content?.trim() || '';
+    const richText = rich.content?.text?.trim() || '';
+    const content =
+      rich.type === 'list' && rootContent.length > richText.length ? rootContent : richText || rootContent;
 
     switch (rich.type) {
       case 'text':
@@ -249,7 +254,7 @@ export class WebSocketService {
         return {
           ...baseMessage,
           type: 'options',
-          content: rich.content?.text ?? '',
+          content,
           options: {
             buttons: (rich.items || []).map((item) => ({
               id: item.id,
@@ -263,7 +268,7 @@ export class WebSocketService {
             ...baseMessage.metadata,
             listTitle: rich.content?.title,
             listItems: rich.items,
-            listIntroText: rich.content?.text,
+            listIntroText: content,
           },
         };
 

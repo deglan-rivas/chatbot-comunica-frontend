@@ -1,2 +1,8 @@
 export { cn } from './cn';
-export { formatTime, formatDate, formatFileSize, generateId } from './formatters';
+export {
+  formatTime,
+  formatDate,
+  formatFileSize,
+  generateId,
+  formatMarkdownContent,
+} from './formatters';

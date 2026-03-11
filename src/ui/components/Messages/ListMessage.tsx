@@ -1,4 +1,4 @@
-import { cn } from '@core/utils';
+import { cn, formatMarkdownContent } from '@core/utils';
 import type { BackendListItem } from '@core/types/backend.types';
 
 interface ListMessageProps {
@@ -36,9 +36,10 @@ export function ListMessage({
           </h3>
         )}
         {introText && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-tight">
-            {introText}
-          </p>
+          <div
+            className="text-sm text-gray-600 dark:text-gray-400 leading-tight [&_a]:text-primary [&_a]:underline [&_a]:font-medium"
+            dangerouslySetInnerHTML={{ __html: formatMarkdownContent(introText) }}
+          />
         )}
       </header>
 

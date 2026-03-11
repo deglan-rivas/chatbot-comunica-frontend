@@ -1,4 +1,4 @@
-import { cn } from '@core/utils';
+import { cn, formatMarkdownContent } from '@core/utils';
 import type { Message, MessageButton } from '@core/types/message.types';
 import type { BackendListItem } from '@core/types/backend.types';
 import { Timestamp } from '../Common/Timestamp';
@@ -13,14 +13,6 @@ interface MessageBubbleProps {
   message: Message;
   onButtonClick?: (button: MessageButton) => void;
   onRatingSubmit?: (rating: number) => void;
-}
-
-function formatContent(content: string): string {
-  return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-    .replace(/<a /g, '<a class="text-primary underline font-medium" target="_blank" rel="noopener noreferrer" ')
-    .replace(/\n/g, '<br/>');
 }
 
 export function MessageBubble({
@@ -83,7 +75,7 @@ export function MessageBubble({
             {message.content && (
               <p
                 className="text-sm text-gray-800 dark:text-gray-100 break-words overflow-hidden"
-                dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
+                dangerouslySetInnerHTML={{ __html: formatMarkdownContent(message.content) }}
               />
             )}
 
@@ -125,9 +117,9 @@ export function MessageBubble({
           />
         )}
 
-        {isBot && (message.metadata?.disclaimer as string | undefined) && (
+        {isBot && message.metadata?.disclaimer != null && (
           <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 italic">
-            {message.metadata.disclaimer as string}
+            {String(message.metadata?.disclaimer)}
           </p>
         )}
         <div className="flex items-center justify-end gap-1 mt-1">
