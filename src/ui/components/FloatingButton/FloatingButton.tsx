@@ -1,7 +1,14 @@
 import { cn } from '@core/utils';
 
-// Logo de Eleccia en base64 para evitar problemas de carga
-const ELECCIA_LOGO = '/eleccia-logo.png';
+// En embed, cargar assets desde el mismo host del widget; fallback local para desarrollo normal.
+function getElecciaLogoUrl(): string {
+  const win = window as Window & { __chatbotWidgetAssetBase?: string };
+  const base = win.__chatbotWidgetAssetBase;
+  if (base) {
+    return new URL('eleccia-logo.png', base).toString();
+  }
+  return '/eleccia-logo.png';
+}
 
 interface FloatingButtonProps {
   onClick: () => void;
@@ -32,12 +39,20 @@ export function FloatingButton({
       )}
     >
       {isOpen ? (
-        <span className="material-icons-round text-2xl text-white">
-          close
-        </span>
+        <svg
+          viewBox="0 0 24 24"
+          className="w-6 h-6 text-white"
+          aria-hidden
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
       ) : (
         <img
-          src={ELECCIA_LOGO}
+          src={getElecciaLogoUrl()}
           alt="Eleccia - Asistente Virtual JNE"
           className="w-10 h-10 rounded-full object-cover"
         />

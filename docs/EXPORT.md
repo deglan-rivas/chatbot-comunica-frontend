@@ -9,6 +9,32 @@ pnpm build
 Esto genera en `dist/`:
 - `chatbot-widget.umd.js` - Para HTML estatico
 - `chatbot-widget.es.js` - Para imports ES modules
+- `chatbot-widget-embed.umd.js` - Loader para integracion con 1 script
+- `chatbot-widget-embed.es.js` - Loader en formato ES module
+
+## Integracion recomendada (1 script)
+
+Para sitios de terceros (incluido Angular), usar el loader embebido:
+
+```html
+<script
+  src="https://tu-cdn.com/chatbot-widget-embed.umd.js"
+  data-project-id="mi-proyecto">
+</script>
+```
+
+### Como funciona
+
+- El sitio tercero solo agrega ese script.
+- El loader crea sesion contra backend (`POST /session`) usando la API base configurada en el build.
+- Luego abre WebSocket en `/ws/{session_id}` de forma automatica.
+- Carga `chatbot-widget.umd.js` y llama internamente `ChatbotWidget.init(...)`.
+
+### Requisitos del tercero (CSP/CORS)
+
+- Permitir `script-src` para el CDN donde alojes el widget.
+- Permitir `connect-src` hacia el backend (`https://.../api/v1` y `wss://.../api/v1/ws/...`).
+- Si usan CSP estricta, permitir fuentes de Google Fonts usadas por el widget.
 
 ## Integracion en HTML Estatico
 

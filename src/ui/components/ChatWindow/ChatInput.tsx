@@ -85,7 +85,18 @@ export function ChatInput({
             )}
             aria-label="Adjuntar archivo"
           >
-            <span className="material-icons-round">attach_file</span>
+            <svg
+              viewBox="0 0 24 24"
+              className="w-5 h-5"
+              aria-hidden
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21.44 11.05l-8.49 8.49a5 5 0 01-7.07-7.07l8.49-8.49a3 3 0 114.24 4.24l-8.49 8.49a1 1 0 01-1.41-1.41l7.78-7.78" />
+            </svg>
           </button>
           <input
             ref={fileInputRef}
@@ -132,7 +143,14 @@ export function ChatInput({
         )}
         aria-label="Enviar mensaje"
       >
-        <span className="material-icons-round">send</span>
+        <svg
+          viewBox="0 0 24 24"
+          className="w-4 h-4"
+          aria-hidden
+          fill="currentColor"
+        >
+          <path d="M3 20l18-8L3 4v6l12 2-12 2z" />
+        </svg>
       </button>
     </div>
   );
