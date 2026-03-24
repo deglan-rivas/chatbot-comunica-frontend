@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prueba Integracion Widget Embed</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        line-height: 1.5;
+      }
+      code {
+        background: #f4f4f4;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .ok {
+        color: #0a7a27;
+      }
+      .warn {
+        color: #a15c00;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Prueba de Widget Embebido (sitio tercero)</h1>
+    <p>
+      Esta pagina simula un sitio externo. Si todo esta bien, deberias ver el boton flotante del
+      chatbot en la esquina inferior.
+    </p>
+
+    <h3>Checklist rapido</h3>
+    <ul>
+      <li>Loader: <code>chatbot-widget-embed.umd.js</code></li>
+      <li>Widget principal: <code>chatbot-widget.umd.js</code></li>
+      <li>Proyecto: <code>prueba-local</code></li>
+    </ul>
+
+    <p id="status" class="warn">Estado: esperando carga del script...</p>
+
+    <!--
+      IMPORTANTE:
+      - Ajusta estas URLs al host donde estes sirviendo el dist (ej: http://localhost:4173)
+      - No abras este archivo con file://, sirvelo por HTTP (vite/dev/preview o python http.server)
+    -->
+    <script
+      src="http://localhost:4173/chatbot-widget-embed.umd.js"
+      data-widget-src="http://localhost:4173/chatbot-widget.umd.js"
+      data-project-id="prueba-local"
+    ></script>
+
+    <script>
+      setTimeout(() => {
+        const status = document.getElementById('status');
+        const hasWidget = Boolean(window.ChatbotWidget);
+        if (hasWidget) {
+          status.textContent = 'Estado: loader cargado. Verifica boton flotante abajo a la derecha.';
+          status.className = 'ok';
+        } else {
+          status.textContent =
+            'Estado: no se detecto ChatbotWidget. Revisa consola y URLs del script.';
+          status.className = 'warn';
+        }
+      }, 1200);
+    </script>
+  </body>
+</html>
+

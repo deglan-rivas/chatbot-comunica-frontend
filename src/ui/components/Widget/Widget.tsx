@@ -17,7 +17,7 @@ interface WidgetProps {
 
 export function Widget({ websocketService }: WidgetProps) {
   const { isOpen, hasUnread, toggleOpen, setHasUnread } = useUIStore();
-  const { position, bot, features, autoOpen, autoOpenDelay } = useConfigStore();
+  const { position, bot, features, autoOpen, autoOpenDelay, endpoints } = useConfigStore();
   const {
     messages,
     isTyping,
@@ -31,6 +31,19 @@ export function Widget({ websocketService }: WidgetProps) {
   } = useChatStore();
 
   const isConnected = connectionStatus === 'connected';
+
+  const resolveBackendLink = useCallback(
+    (raw: string): string => {
+      if (!raw.startsWith('/')) return raw;
+      try {
+        const endpointUrl = new URL(endpoints.websocket);
+        return `${endpointUrl.origin}${raw}`;
+      } catch {
+        return `${window.location.origin}${raw}`;
+      }
+    },
+    [endpoints.websocket]
+  );
 
   useEffect(() => {
     const events: WebSocketEvents = {
@@ -95,14 +108,15 @@ export function Widget({ websocketService }: WidgetProps) {
       const listItem = listItems?.find((i) => i.id === button.id);
 
       if (listItem?.enlace) {
-        window.open(listItem.enlace, '_blank');
+        const targetUrl = resolveBackendLink(listItem.enlace);
+        window.open(targetUrl, '_blank');
         updateMessageOptions(messageId, button.value);
         return;
       }
 
       const isLink = button.action === 'open_link' || (typeof button.value === 'string' && /^https?:\/\//i.test(button.value));
       if (isLink) {
-        window.open(String(button.value), '_blank');
+        window.open(resolveBackendLink(String(button.value)), '_blank');
         updateMessageOptions(messageId, button.value);
         return;
       }
@@ -126,7 +140,7 @@ export function Widget({ websocketService }: WidgetProps) {
         updateMessageStatus(response.id, 'sent');
       }, 300);
     },
-    [addMessage, updateMessageOptions, updateMessageStatus, setTyping, websocketService, conversationId, messages]
+    [addMessage, updateMessageOptions, updateMessageStatus, setTyping, websocketService, conversationId, messages, resolveBackendLink]
   );
 
   const handleRatingSubmit = useCallback(

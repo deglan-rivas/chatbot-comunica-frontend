@@ -26,9 +26,14 @@ export function VideoPlayer({ attachment }: VideoPlayerProps) {
             className="absolute inset-0 w-full h-full object-cover opacity-50"
           />
         )}
-        <span className="material-icons-round text-primary text-4xl mb-1 relative z-10">
-          play_circle
-        </span>
+        <svg
+          viewBox="0 0 24 24"
+          className="w-10 h-10 text-primary mb-1 relative z-10"
+          aria-hidden
+          fill="currentColor"
+        >
+          <path d="M8 5v14l11-7z" />
+        </svg>
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 relative z-10">
           {attachment.name ?? 'Infografia / Tutorial (Video)'}
         </span>

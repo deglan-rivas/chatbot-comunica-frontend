@@ -13,7 +13,7 @@ export interface WebSocketConfig {
   url: string;
   userId?: string;
   autoReconnect?: boolean;
-  reconnectionAttempts?: number;
+  reconnectionAttempts?: number | null;
   reconnectionDelay?: number;
 }
 
@@ -33,11 +33,14 @@ export class WebSocketService {
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private userId: string;
+  private readonly sessionStorageKey = 'chatbot-session-id';
+  private isManuallyDisconnected = false;
+  private isConnecting = false;
 
   constructor(config: WebSocketConfig, events: WebSocketEvents = {}) {
     this.config = {
       autoReconnect: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: null,
       reconnectionDelay: 1000,
       ...config,
     };
@@ -56,15 +59,85 @@ export class WebSocketService {
   }
 
   connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) return;
+    if (this.isConnecting) return;
 
+    this.isManuallyDisconnected = false;
+    this.isConnecting = true;
+
+    void this.openConnection();
+  }
+
+  private async openConnection(forceNewSession = false): Promise<void> {
     try {
-      this.ws = new WebSocket(this.config.url);
+      const wsUrl = await this.resolveWebSocketUrl(forceNewSession);
+      this.ws = new WebSocket(wsUrl);
       this.setupListeners();
     } catch (error) {
       this.events.onError?.(error as Error);
       this.scheduleReconnect();
+    } finally {
+      this.isConnecting = false;
     }
+  }
+
+  private isDirectWebSocketUrl(url: string): boolean {
+    return /^wss?:\/\//i.test(url) && /\/ws\/[^/]+$/i.test(url);
+  }
+
+  private getApiBaseUrl(): string {
+    return this.config.url.replace(/\/+$/, '');
+  }
+
+  private getSessionIdFromStorage(): string | null {
+    return sessionStorage.getItem(this.sessionStorageKey);
+  }
+
+  private setSessionId(sessionId: string): void {
+    sessionStorage.setItem(this.sessionStorageKey, sessionId);
+  }
+
+  private clearSessionId(): void {
+    sessionStorage.removeItem(this.sessionStorageKey);
+  }
+
+  private async createSession(): Promise<string> {
+    const apiBase = this.getApiBaseUrl();
+    const response = await fetch(`${apiBase}/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`No se pudo crear la sesión (${response.status})`);
+    }
+
+    const data = (await response.json()) as { session_id?: string };
+    if (!data.session_id) {
+      throw new Error('Respuesta inválida al crear sesión');
+    }
+
+    this.setSessionId(data.session_id);
+    return data.session_id;
+  }
+
+  private toWebSocketBase(apiBase: string): string {
+    return apiBase.replace(/^http:\/\//i, 'ws://').replace(/^https:\/\//i, 'wss://');
+  }
+
+  private async resolveWebSocketUrl(forceNewSession = false): Promise<string> {
+    if (this.isDirectWebSocketUrl(this.config.url)) {
+      return this.config.url;
+    }
+
+    const apiBase = this.getApiBaseUrl();
+    let sessionId = forceNewSession ? null : this.getSessionIdFromStorage();
+    if (!sessionId) {
+      sessionId = await this.createSession();
+    }
+
+    const wsBase = this.toWebSocketBase(apiBase);
+    return `${wsBase}/ws/${sessionId}`;
   }
 
   private setupListeners(): void {
@@ -75,8 +148,17 @@ export class WebSocketService {
       this.events.onConnect?.();
     };
 
-    this.ws.onclose = (event) => {
+    this.ws.onclose = (event: CloseEvent) => {
       this.events.onDisconnect?.(event.reason || 'closed');
+      this.ws = null;
+      if (this.isManuallyDisconnected) return;
+
+      if (event.code === 4000) {
+        this.clearSessionId();
+        void this.openConnection(true);
+        return;
+      }
+
       this.scheduleReconnect();
     };
 
@@ -144,9 +226,11 @@ export class WebSocketService {
   }
 
   private scheduleReconnect(): void {
+    if (this.isManuallyDisconnected) return;
     if (
       !this.config.autoReconnect ||
-      this.reconnectAttempt >= (this.config.reconnectionAttempts ?? 5)
+      (this.config.reconnectionAttempts != null &&
+        this.reconnectAttempt >= this.config.reconnectionAttempts)
     ) {
       return;
     }
@@ -155,14 +239,18 @@ export class WebSocketService {
       clearTimeout(this.reconnectTimer);
     }
 
+    const baseDelay = this.config.reconnectionDelay ?? 1000;
+    const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempt), 20000);
+
     this.reconnectTimer = setTimeout(() => {
       this.reconnectAttempt++;
       this.events.onReconnect?.(this.reconnectAttempt);
       this.connect();
-    }, this.config.reconnectionDelay);
+    }, delay);
   }
 
   disconnect(): void {
+    this.isManuallyDisconnected = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

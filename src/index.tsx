@@ -84,13 +84,6 @@ class ChatbotWidget {
     styleEl.textContent = this.getStyles(config);
     this.shadowRoot.appendChild(styleEl);
 
-    // Load Material Icons
-    const iconLink = document.createElement('link');
-    iconLink.rel = 'stylesheet';
-    iconLink.href =
-      'https://fonts.googleapis.com/icon?family=Material+Icons+Round';
-    this.shadowRoot.appendChild(iconLink);
-
     // Load Inter font
     const fontLink = document.createElement('link');
     fontLink.rel = 'stylesheet';
