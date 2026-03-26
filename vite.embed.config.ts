@@ -9,10 +9,7 @@ export default defineConfig({
     process: JSON.stringify({ env: { NODE_ENV: 'production' } }),
     global: 'globalThis',
   },
-  plugins: [
-    react(),
-    cssInjectedByJsPlugin(),
-  ],
+  plugins: [react(), cssInjectedByJsPlugin()],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
@@ -21,11 +18,12 @@ export default defineConfig({
     },
   },
   build: {
+    emptyOutDir: false,
     lib: {
-      entry: resolve(__dirname, 'src/index.tsx'),
-      name: 'ChatbotWidget',
+      entry: resolve(__dirname, 'src/embed.ts'),
+      name: 'ChatbotWidgetEmbed',
       formats: ['umd', 'es'],
-      fileName: (format) => `chatbot-widget.${format}.js`,
+      fileName: (format) => `chatbot-widget-embed.${format}.js`,
     },
     rollupOptions: {
       output: {
@@ -37,18 +35,5 @@ export default defineConfig({
     target: 'es2015',
     chunkSizeWarningLimit: 500,
   },
-  server: {
-    port: 3000,
-    open: true,
-    allowedHosts: [
-      '.trycloudflare.com',
-    ],
-    proxy: {
-      '/api/web/chat/ws': {
-        target: 'ws://192.168.27.228:8001',
-        ws: true,
-        changeOrigin: true,
-      },
-    },
-  },
 });
+

@@ -13,7 +13,7 @@ export interface WebSocketConfig {
   url: string;
   userId?: string;
   autoReconnect?: boolean;
-  reconnectionAttempts?: number;
+  reconnectionAttempts?: number | null;
   reconnectionDelay?: number;
 }
 
@@ -33,11 +33,14 @@ export class WebSocketService {
   private reconnectAttempt = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private userId: string;
+  private readonly sessionStorageKey = 'chatbot-session-id';
+  private isManuallyDisconnected = false;
+  private isConnecting = false;
 
   constructor(config: WebSocketConfig, events: WebSocketEvents = {}) {
     this.config = {
       autoReconnect: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: null,
       reconnectionDelay: 1000,
       ...config,
     };
@@ -56,15 +59,85 @@ export class WebSocketService {
   }
 
   connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) return;
+    if (this.isConnecting) return;
 
+    this.isManuallyDisconnected = false;
+    this.isConnecting = true;
+
+    void this.openConnection();
+  }
+
+  private async openConnection(forceNewSession = false): Promise<void> {
     try {
-      this.ws = new WebSocket(this.config.url);
+      const wsUrl = await this.resolveWebSocketUrl(forceNewSession);
+      this.ws = new WebSocket(wsUrl);
       this.setupListeners();
     } catch (error) {
       this.events.onError?.(error as Error);
       this.scheduleReconnect();
+    } finally {
+      this.isConnecting = false;
     }
+  }
+
+  private isDirectWebSocketUrl(url: string): boolean {
+    return /^wss?:\/\//i.test(url) && /\/ws\/[^/]+$/i.test(url);
+  }
+
+  private getApiBaseUrl(): string {
+    return this.config.url.replace(/\/+$/, '');
+  }
+
+  private getSessionIdFromStorage(): string | null {
+    return sessionStorage.getItem(this.sessionStorageKey);
+  }
+
+  private setSessionId(sessionId: string): void {
+    sessionStorage.setItem(this.sessionStorageKey, sessionId);
+  }
+
+  private clearSessionId(): void {
+    sessionStorage.removeItem(this.sessionStorageKey);
+  }
+
+  private async createSession(): Promise<string> {
+    const apiBase = this.getApiBaseUrl();
+    const response = await fetch(`${apiBase}/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`No se pudo crear la sesión (${response.status})`);
+    }
+
+    const data = (await response.json()) as { session_id?: string };
+    if (!data.session_id) {
+      throw new Error('Respuesta inválida al crear sesión');
+    }
+
+    this.setSessionId(data.session_id);
+    return data.session_id;
+  }
+
+  private toWebSocketBase(apiBase: string): string {
+    return apiBase.replace(/^http:\/\//i, 'ws://').replace(/^https:\/\//i, 'wss://');
+  }
+
+  private async resolveWebSocketUrl(forceNewSession = false): Promise<string> {
+    if (this.isDirectWebSocketUrl(this.config.url)) {
+      return this.config.url;
+    }
+
+    const apiBase = this.getApiBaseUrl();
+    let sessionId = forceNewSession ? null : this.getSessionIdFromStorage();
+    if (!sessionId) {
+      sessionId = await this.createSession();
+    }
+
+    const wsBase = this.toWebSocketBase(apiBase);
+    return `${wsBase}/ws/${sessionId}`;
   }
 
   private setupListeners(): void {
@@ -75,8 +148,17 @@ export class WebSocketService {
       this.events.onConnect?.();
     };
 
-    this.ws.onclose = (event) => {
+    this.ws.onclose = (event: CloseEvent) => {
       this.events.onDisconnect?.(event.reason || 'closed');
+      this.ws = null;
+      if (this.isManuallyDisconnected) return;
+
+      if (event.code === 4000) {
+        this.clearSessionId();
+        void this.openConnection(true);
+        return;
+      }
+
       this.scheduleReconnect();
     };
 
@@ -87,17 +169,36 @@ export class WebSocketService {
     this.ws.onmessage = (event) => {
       try {
         const data: BackendResponse = JSON.parse(event.data);
-        console.log('[WebSocket] Raw message received:', data);
 
-        // Ignorar mensajes de sistema del backend (ej: "Conexión restablecida")
         if (data.type === 'system') {
-          console.log('[WebSocket] Ignoring system message from backend');
+          const systemMessage: Message = {
+            id: generateId(),
+            type: 'text',
+            sender: 'bot',
+            content: data.content || 'Conectado.',
+            timestamp: new Date(data.timestamp || Date.now()),
+            status: 'read',
+          };
+          this.events.onMessage?.(systemMessage);
           return;
         }
 
-        // Validate response_rich exists
+        if (data.type === 'error') {
+          const errorMessage: Message = {
+            id: generateId(),
+            type: 'text',
+            sender: 'bot',
+            content: data.content || 'Ha ocurrido un error.',
+            timestamp: new Date(data.timestamp || Date.now()),
+            status: 'read',
+            metadata: { isError: true, conversationId: data.state?.conversation_id },
+          };
+          this.events.onMessage?.(errorMessage);
+          return;
+        }
+
+        // type === 'message'
         if (!data.response_rich) {
-          console.warn('[WebSocket] Message without response_rich, using content as fallback');
           const fallbackMessage: Message = {
             id: generateId(),
             type: 'text',
@@ -105,6 +206,12 @@ export class WebSocketService {
             content: data.content || 'Mensaje recibido',
             timestamp: new Date(data.timestamp || Date.now()),
             status: 'read',
+            metadata: {
+              conversationId: data.state?.conversation_id,
+              confidence_level: data.confidence_level,
+              source: data.source,
+              disclaimer: data.disclaimer,
+            },
           };
           this.events.onMessage?.(fallbackMessage);
           return;
@@ -119,9 +226,11 @@ export class WebSocketService {
   }
 
   private scheduleReconnect(): void {
+    if (this.isManuallyDisconnected) return;
     if (
       !this.config.autoReconnect ||
-      this.reconnectAttempt >= (this.config.reconnectionAttempts ?? 5)
+      (this.config.reconnectionAttempts != null &&
+        this.reconnectAttempt >= this.config.reconnectionAttempts)
     ) {
       return;
     }
@@ -130,14 +239,18 @@ export class WebSocketService {
       clearTimeout(this.reconnectTimer);
     }
 
+    const baseDelay = this.config.reconnectionDelay ?? 1000;
+    const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempt), 20000);
+
     this.reconnectTimer = setTimeout(() => {
       this.reconnectAttempt++;
       this.events.onReconnect?.(this.reconnectAttempt);
       this.connect();
-    }, this.config.reconnectionDelay);
+    }, delay);
   }
 
   disconnect(): void {
+    this.isManuallyDisconnected = true;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -148,42 +261,52 @@ export class WebSocketService {
     }
   }
 
-  sendMessage(text: string): void {
+  sendMessage(text: string, opts?: { conversationId?: string; message_id?: string }): void {
     if (this.ws?.readyState !== WebSocket.OPEN) {
       console.warn('WebSocket is not connected');
       return;
     }
 
     const request: BackendRequest = {
-      user_id: this.userId,
-      message: text,
+      content: text,
+      conversation_id: opts?.conversationId,
+      message_id: opts?.message_id,
+      metadata: {},
     };
 
     this.ws.send(JSON.stringify(request));
   }
 
   private transformResponse(data: BackendResponse): Message {
-    const rich = data.response_rich;
+    const rich = data.response_rich!;
     const baseMessage = {
       id: generateId(),
       sender: 'bot' as const,
       timestamp: new Date(data.timestamp || Date.now()),
       status: 'read' as const,
       metadata: {
+        conversationId: data.state?.conversation_id,
         conversationActive: data.conversation_active,
         responseRich: rich,
+        confidence_level: data.confidence_level,
+        source: data.source,
+        disclaimer: data.disclaimer,
       },
     };
 
-    // Transform based on response_rich type
-    return this.transformRichResponse(rich, baseMessage);
+    return this.transformRichResponse(rich, baseMessage, data);
   }
 
   private transformRichResponse(
     rich: ResponseRich,
-    baseMessage: Omit<Message, 'type' | 'content'>
+    baseMessage: Omit<Message, 'type' | 'content'>,
+    data: BackendResponse
   ): Message {
-    const content = rich.content?.text || '';
+    // Para listas: si el content raíz es más largo, usarlo como intro (evita texto truncado en response_rich.content.text)
+    const rootContent = data.content?.trim() || '';
+    const richText = rich.content?.text?.trim() || '';
+    const content =
+      rich.type === 'list' && rootContent.length > richText.length ? rootContent : richText || rootContent;
 
     switch (rich.type) {
       case 'text':
@@ -205,6 +328,7 @@ export class WebSocketService {
               label: action.label,
               value: action.value,
               variant: this.mapButtonStyle(action.style),
+              action: action.action ?? undefined,
             })),
             columns: 2,
           },
@@ -218,7 +342,7 @@ export class WebSocketService {
         return {
           ...baseMessage,
           type: 'options',
-          content: rich.content?.title || content,
+          content,
           options: {
             buttons: (rich.items || []).map((item) => ({
               id: item.id,
@@ -230,8 +354,9 @@ export class WebSocketService {
           },
           metadata: {
             ...baseMessage.metadata,
+            listTitle: rich.content?.title,
             listItems: rich.items,
-            subtitle: rich.content?.subtitle,
+            listIntroText: content,
           },
         };
 
@@ -247,6 +372,7 @@ export class WebSocketService {
                   label: action.label,
                   value: action.value,
                   variant: this.mapButtonStyle(action.style),
+                  action: action.action ?? undefined,
                 })),
                 columns: 2,
               }
@@ -274,13 +400,14 @@ export class WebSocketService {
     }
   }
 
-  private mapButtonStyle(style: string): 'primary' | 'secondary' | 'outline' {
+  private mapButtonStyle(style?: string): 'primary' | 'secondary' | 'outline' {
     switch (style) {
       case 'primary':
         return 'primary';
       case 'danger':
-        return 'primary'; // Map danger to primary for now
+        return 'primary';
       case 'secondary':
+        return 'secondary';
       default:
         return 'secondary';
     }

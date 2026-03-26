@@ -26,6 +26,8 @@ export interface MessageButton {
   value: string | number;
   variant?: 'primary' | 'secondary' | 'outline';
   disabled?: boolean;
+  /** Ej: "open_link" | "menu" – si es "open_link" o value es URL, abrir enlace en vez de enviar mensaje */
+  action?: string | null;
 }
 
 export interface MessageOptions {

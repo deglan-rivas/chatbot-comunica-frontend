@@ -47,6 +47,9 @@ Editar el archivo `.env` con los valores correspondientes:
 # URL del WebSocket del backend
 VITE_WEBSOCKET_URL=ws://192.168.27.228:8001/api/web/chat/ws
 
+# API base para el script embebido (opcional, recomendado para build de embed)
+VITE_EMBED_API_BASE_URL=https://chatbot.midominio.pe/api/v1
+
 # Ambiente: DEV o PRD
 VITE_APP_ENV=DEV
 ```
@@ -54,6 +57,7 @@ VITE_APP_ENV=DEV
 | Variable | Descripcion | Ejemplo |
 |----------|-------------|---------|
 | `VITE_WEBSOCKET_URL` | URL del WebSocket del backend | `ws://localhost:8001/api/web/chat/ws` |
+| `VITE_EMBED_API_BASE_URL` | API base usada por el loader embebido (`/session` y `/ws/{session_id}`) | `https://chatbot.midominio.pe/api/v1` |
 | `VITE_APP_ENV` | Ambiente de ejecucion (`DEV` o `PRD`) | `DEV` |
 
 ### 4. Ejecutar en desarrollo

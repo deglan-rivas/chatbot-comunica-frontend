@@ -17,11 +17,12 @@ interface WidgetProps {
 
 export function Widget({ websocketService }: WidgetProps) {
   const { isOpen, hasUnread, toggleOpen, setHasUnread } = useUIStore();
-  const { position, bot, features, autoOpen, autoOpenDelay } = useConfigStore();
+  const { position, bot, features, autoOpen, autoOpenDelay, endpoints } = useConfigStore();
   const {
     messages,
     isTyping,
     connectionStatus,
+    conversationId,
     addMessage,
     updateMessageStatus,
     updateMessageOptions,
@@ -30,6 +31,19 @@ export function Widget({ websocketService }: WidgetProps) {
   } = useChatStore();
 
   const isConnected = connectionStatus === 'connected';
+
+  const resolveBackendLink = useCallback(
+    (raw: string): string => {
+      if (!raw.startsWith('/')) return raw;
+      try {
+        const endpointUrl = new URL(endpoints.websocket);
+        return `${endpointUrl.origin}${raw}`;
+      } catch {
+        return `${window.location.origin}${raw}`;
+      }
+    },
+    [endpoints.websocket]
+  );
 
   useEffect(() => {
     const events: WebSocketEvents = {
@@ -78,17 +92,35 @@ export function Widget({ websocketService }: WidgetProps) {
 
       addMessage(message);
       setTyping(true);
-      websocketService.sendMessage(text);
+      websocketService.sendMessage(text, { conversationId: conversationId ?? undefined });
 
       setTimeout(() => {
         updateMessageStatus(message.id, 'sent');
       }, 300);
     },
-    [addMessage, updateMessageStatus, setTyping, websocketService]
+    [addMessage, updateMessageStatus, setTyping, websocketService, conversationId]
   );
 
   const handleButtonClick = useCallback(
     (messageId: string, button: MessageButton) => {
+      const message = messages.find((m) => m.id === messageId);
+      const listItems = message?.metadata?.listItems as Array<{ id: string; enlace?: string; value: string }> | undefined;
+      const listItem = listItems?.find((i) => i.id === button.id);
+
+      if (listItem?.enlace) {
+        const targetUrl = resolveBackendLink(listItem.enlace);
+        window.open(targetUrl, '_blank');
+        updateMessageOptions(messageId, button.value);
+        return;
+      }
+
+      const isLink = button.action === 'open_link' || (typeof button.value === 'string' && /^https?:\/\//i.test(button.value));
+      if (isLink) {
+        window.open(resolveBackendLink(String(button.value)), '_blank');
+        updateMessageOptions(messageId, button.value);
+        return;
+      }
+
       updateMessageOptions(messageId, button.value);
 
       const response: Message = {
@@ -102,14 +134,13 @@ export function Widget({ websocketService }: WidgetProps) {
 
       addMessage(response);
       setTyping(true);
-      // Send the button value as text to the backend
-      websocketService.sendMessage(String(button.value));
+      websocketService.sendMessage(String(button.value), { conversationId: conversationId ?? undefined });
 
       setTimeout(() => {
         updateMessageStatus(response.id, 'sent');
       }, 300);
     },
-    [addMessage, updateMessageOptions, updateMessageStatus, setTyping, websocketService]
+    [addMessage, updateMessageOptions, updateMessageStatus, setTyping, websocketService, conversationId, messages, resolveBackendLink]
   );
 
   const handleRatingSubmit = useCallback(
@@ -136,13 +167,13 @@ export function Widget({ websocketService }: WidgetProps) {
 
       addMessage(response);
       setTyping(true);
-      websocketService.sendMessage(String(rating));
+      websocketService.sendMessage(String(rating), { conversationId: conversationId ?? undefined });
 
       setTimeout(() => {
         updateMessageStatus(response.id, 'sent');
       }, 300);
     },
-    [messages, addMessage, updateMessageStatus, setTyping, websocketService]
+    [messages, addMessage, updateMessageStatus, setTyping, websocketService, conversationId]
   );
 
   // Backend does not support typing indicators, so this is a no-op
