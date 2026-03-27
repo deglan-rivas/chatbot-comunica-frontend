@@ -24,6 +24,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# nginx.conf generado desde nginx.conf.template (ver BUILD.md)
+nginx.conf
+
 # Cache
 .cache/
 *.tsbuildinfo

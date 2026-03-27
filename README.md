@@ -53,6 +53,7 @@ src/
 
 | Documento | Descripcion |
 |-----------|-------------|
+| [BUILD.md](./BUILD.md) | Build de imagen Docker (multi-stage nginx): generar nginx.conf, variables de entorno, comandos por ambiente |
 | [docs/SETUP.md](./docs/SETUP.md) | Instrucciones para levantar el proyecto en desarrollo |
 | [docs/EXPORT.md](./docs/EXPORT.md) | Guia para integrar el widget en otro proyecto (React SPA o HTML vanilla) |
 | [docs/WEBSOCKET_RESPONSE.md](./docs/WEBSOCKET_RESPONSE.md) | Formato esperado de la respuesta WebSocket (backend → frontend) para renderizar correctamente |

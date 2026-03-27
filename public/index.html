@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- config.js expone window.env con valores de desarrollo; en producción lo sobreescribe entrypoint.prd.sh -->
-  <script src="/config.js"></script>
   <title>Chatbot Widget - Demo</title>
+  <!-- config.js debe cargarse primero para que window.env esté disponible -->
+  <script src="/config.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -85,6 +85,61 @@
     </div>
   </div>
 
-  <script type="module" src="/src/demo.tsx"></script>
+  <!-- Bundle compilado del widget (generado por pnpm build) -->
+  <script type="module">
+    import { ChatbotWidget } from '/chatbot-widget.es.js';
+
+    const statusEl = document.getElementById('status');
+    function setStatus(type, message) {
+      statusEl.className = 'status ' + type;
+      statusEl.textContent = message;
+    }
+
+    // Leer URL del WebSocket desde window.env (inyectado por entrypoint.prd.sh en runtime)
+    const wsBase = (
+      window.env?.VITE_WEBSOCKET_URL || 'ws://localhost:5010/api/v1'
+    ).replace(/\/$/, '');
+
+    // Generar userId único por sesión de navegador
+    const userId = crypto.randomUUID();
+    const websocketUrl = `${wsBase}/ws/${userId}`;
+
+    try {
+      ChatbotWidget.init({
+        projectId: 'demo',
+        endpoints: { websocket: websocketUrl },
+        bot: {
+          name: 'Eleccia Comunicaciones',
+          welcomeMessage: 'Bienvenido al Jurado Nacional de Elecciones. En que puedo ayudarte?',
+        },
+        position: 'bottom-right',
+        autoOpen: false,
+        onReady: () => {
+          setStatus('success', 'Widget cargado. Haz clic en el boton de la esquina inferior derecha.');
+        },
+        onError: (error) => {
+          setStatus('error', 'Error: ' + error.message);
+        },
+      });
+
+      document.getElementById('btn-open').addEventListener('click', () => {
+        ChatbotWidget.getInstance()?.open();
+      });
+      document.getElementById('btn-close').addEventListener('click', () => {
+        ChatbotWidget.getInstance()?.close();
+      });
+      document.getElementById('btn-toggle').addEventListener('click', () => {
+        ChatbotWidget.getInstance()?.toggle();
+      });
+      let isDark = false;
+      document.getElementById('btn-theme').addEventListener('click', () => {
+        isDark = !isDark;
+        ChatbotWidget.getInstance()?.setThemeMode(isDark ? 'dark' : 'light');
+      });
+
+    } catch (error) {
+      setStatus('error', 'Error al cargar: ' + error.message);
+    }
+  </script>
 </body>
 </html>

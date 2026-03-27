@@ -12,9 +12,12 @@ type EmbedWindow = Window & {
   __chatbotWidgetAssetBase?: string;
 };
 
+// Lee de window.env (inyectado en runtime por entrypoint.prd.sh) con fallback a import.meta.env (build time).
 const RAW_API_BASE =
+  (typeof window !== 'undefined' && window.env?.VITE_EMBED_API_BASE_URL) ||
   import.meta.env.VITE_EMBED_API_BASE_URL ||
   import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.env?.VITE_WEBSOCKET_URL) ||
   import.meta.env.VITE_WEBSOCKET_URL ||
   '';
 

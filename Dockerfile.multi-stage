@@ -1,0 +1,25 @@
+# Etapa de desarrollo y build
+FROM node:22.15.0-alpine as builder
+WORKDIR /app
+
+# usando pnpm como gestor de dependencias
+COPY package*.json ./
+COPY pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
+RUN pnpm install
+# No se copia .env: las variables VITE_* se inyectan en runtime vía window.env (config.js + entrypoint.prd.sh)
+COPY . .
+RUN pnpm run build
+
+
+
+# Etapa de producción: sirve los archivos estáticos con NGINX
+FROM nginx:1.26-alpine as production
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY ./nginx.main.conf /etc/nginx/nginx.conf
+# nginx.conf se genera antes del build con envsubst (ver BUILD.md)
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./entrypoint.prd.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+EXPOSE 80
+CMD ["/entrypoint.sh"]

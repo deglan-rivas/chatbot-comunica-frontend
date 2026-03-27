@@ -11,9 +11,16 @@ function setStatus(type: string, message: string) {
 }
 
 // URL base del WebSocket (solo protocolo + host + puerto). El path /ws/{user_id} se construye aquí.
+// Lee de window.env (inyectado en runtime por entrypoint.prd.sh) con fallback a import.meta.env (build time).
 function getWebSocketBase(): string {
-  const base = import.meta.env.VITE_WEBSOCKET_URL || 'ws://localhost:8000';
-  const appEnv = import.meta.env.VITE_APP_ENV || 'DEV';
+  const base =
+    window.env?.VITE_WEBSOCKET_URL ||
+    import.meta.env.VITE_WEBSOCKET_URL ||
+    'ws://localhost:5010/api/v1';
+  const appEnv =
+    window.env?.VITE_APP_ENV ||
+    import.meta.env.VITE_APP_ENV ||
+    'DEV';
 
   if (appEnv === 'DEV' && window.location.protocol === 'https:') {
     return `wss://${window.location.host}`;
