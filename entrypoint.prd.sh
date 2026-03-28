@@ -7,6 +7,7 @@ echo "window.env = {
   VITE_EMBED_API_BASE_URL: \"${VITE_EMBED_API_BASE_URL:-}\",
   VITE_APP_ENV: \"${VITE_APP_ENV:-PRD}\"
 };" > /usr/share/nginx/html/config.js
+chmod 644 /usr/share/nginx/html/config.js
 
 # Iniciar nginx
 nginx -g "daemon off;"
