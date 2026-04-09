@@ -269,7 +269,9 @@ class ChatbotWidget {
 
       .flex-col { flex-direction: column; }
       .flex-1 { flex: 1 1 0%; }
+      .flex-shrink-0 { flex-shrink: 0; }
       .items-center { align-items: center; }
+      .items-start { align-items: flex-start; }
       .items-end { align-items: flex-end; }
       .justify-center { justify-content: center; }
       .justify-end { justify-content: flex-end; }
@@ -478,6 +480,10 @@ class ChatbotWidget {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.5; }
       }
+      @keyframes attentionGentle {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.04); }
+      }
 
       .animate-slide-up { animation: slideUp 0.3s ease-out; }
       .animate-fade-in { animation: fadeIn 0.2s ease-out; }
@@ -485,6 +491,16 @@ class ChatbotWidget {
       .animate-bounce { animation: bounce 1s infinite; }
       .animate-spin { animation: spin 1s linear infinite; }
       .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+      .animate-attention-limited {
+        animation: attentionGentle 2s ease-in-out 3;
+      }
+      @keyframes softPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.82; }
+      }
+      .animate-soft-pulse-session {
+        animation: softPulse 3s ease-in-out 2;
+      }
 
       /* States */
       .cursor-pointer { cursor: pointer; }
