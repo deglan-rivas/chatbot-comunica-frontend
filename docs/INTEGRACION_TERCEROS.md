@@ -106,21 +106,40 @@ Content-Security-Policy:
 
 ---
 
-## 7. Problemas comunes y solucion rapida
+## 7. Eventos de analitica (opcional)
 
-### 7.1 No aparece el widget
+El widget despacha en `window` un `CustomEvent` para que el sitio tercero registre metricas sin acoplarse al codigo interno.
+
+- **Nombre del evento:** `chatbot-widget-analytics`
+- **`event.detail`:** objeto con al menos `event` (string), `timestamp` (number) y campos adicionales segun el caso.
+
+Ejemplo de escucha:
+
+```js
+window.addEventListener('chatbot-widget-analytics', (e) => {
+  console.log(e.detail.event, e.detail);
+});
+```
+
+**Valores tipicos de `detail.event`:** `fab_mounted`, `onboarding_banner_shown`, `onboarding_banner_dismissed`, `fab_toggle`, `chat_opened`, `chat_closed`, `message_sent`.
+
+---
+
+## 8. Problemas comunes y solucion rapida
+
+### 8.1 No aparece el widget
 
 - Verificar que la URL de `src` sea correcta.
 - Revisar consola del navegador por errores de carga.
 - Confirmar que no haya bloqueo CSP de `script-src`.
 
-### 7.2 El widget aparece pero no responde
+### 8.2 El widget aparece pero no responde
 
 - Revisar en consola errores de `connect-src` o WebSocket.
 - Confirmar que el dominio permita `POST /session` y `wss`.
 - Verificar si existe firewall/proxy corporativo bloqueando WSS.
 
-### 7.3 Se ve pero sin iconos/fuentes
+### 8.3 Se ve pero sin iconos/fuentes
 
 - Permitir dominios de Google Fonts en CSP (si aplica).
 

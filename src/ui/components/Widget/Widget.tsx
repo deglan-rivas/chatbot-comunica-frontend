@@ -1,10 +1,10 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { FloatingButton } from '../FloatingButton/FloatingButton';
 import { ChatWindow } from '../ChatWindow/ChatWindow';
 import { useChatStore } from '@core/store/chat.store';
 import { useUIStore } from '@core/store/ui.store';
 import { useConfigStore } from '@core/store/config.store';
-import { generateId } from '@core/utils';
+import { emitWidgetAnalytics, generateId } from '@core/utils';
 import type { Message, MessageButton } from '@core/types/message.types';
 import type {
   WebSocketService,
@@ -31,6 +31,20 @@ export function Widget({ websocketService }: WidgetProps) {
   } = useChatStore();
 
   const isConnected = connectionStatus === 'connected';
+
+  const prevOpenRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (prevOpenRef.current === null) {
+      prevOpenRef.current = isOpen;
+      return;
+    }
+    if (prevOpenRef.current !== isOpen) {
+      emitWidgetAnalytics(isOpen ? 'chat_opened' : 'chat_closed', {
+        projectId: useConfigStore.getState().projectId,
+      });
+      prevOpenRef.current = isOpen;
+    }
+  }, [isOpen]);
 
   const resolveBackendLink = useCallback(
     (raw: string): string => {
@@ -92,6 +106,10 @@ export function Widget({ websocketService }: WidgetProps) {
 
       addMessage(message);
       setTyping(true);
+      emitWidgetAnalytics('message_sent', {
+        projectId: useConfigStore.getState().projectId,
+        length: text.trim().length,
+      });
       websocketService.sendMessage(text, { conversationId: conversationId ?? undefined });
 
       setTimeout(() => {
@@ -186,6 +204,7 @@ export function Widget({ websocketService }: WidgetProps) {
         isOpen={isOpen}
         hasUnread={hasUnread}
         position={position}
+        isConnected={isConnected}
       />
 
       {isOpen && (
