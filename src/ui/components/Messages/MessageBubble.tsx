@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { cn, formatMarkdownContent } from '@core/utils';
 import type { Message, MessageButton } from '@core/types/message.types';
 import type { BackendListItem } from '@core/types/backend.types';
@@ -13,12 +14,18 @@ interface MessageBubbleProps {
   message: Message;
   onButtonClick?: (button: MessageButton) => void;
   onRatingSubmit?: (rating: number) => void;
+  onFeedbackSubmit?: (payload: {
+    messageId: string;
+    isHelpful: boolean;
+    reason?: string | null;
+  }) => Promise<boolean>;
 }
 
 export function MessageBubble({
   message,
   onButtonClick,
   onRatingSubmit,
+  onFeedbackSubmit,
 }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
   const isBot = message.sender === 'bot';
@@ -28,6 +35,25 @@ export function MessageBubble({
   const listItems = message.metadata?.listItems as BackendListItem[] | undefined;
   const listTitle = message.metadata?.listTitle as string | undefined;
   const isList = Array.isArray(listItems) && listItems.length > 0 && message.options?.buttons;
+  const feedbackSent = Boolean(message.metadata?.feedbackSent);
+  const feedbackEnabled = message.metadata?.feedbackEnabled === true;
+  const [showReasonPicker, setShowReasonPicker] = useState(false);
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+  const feedbackReasons = ['no respondio', 'incorrecta', 'confusa', 'otro'] as const;
+
+  const submitFeedback = async (isHelpful: boolean, reason?: string | null) => {
+    if (!onFeedbackSubmit || feedbackSent || isSendingFeedback) return;
+    setIsSendingFeedback(true);
+    const ok = await onFeedbackSubmit({
+      messageId: message.id,
+      isHelpful,
+      reason,
+    });
+    setIsSendingFeedback(false);
+    if (ok) {
+      setShowReasonPicker(false);
+    }
+  };
 
   if (isSystem) {
     return (
@@ -115,6 +141,45 @@ export function MessageBubble({
             onSelect={onRatingSubmit}
             disabled={message.rating.selectedValue !== undefined}
           />
+        )}
+
+        {isBot && !isError && feedbackEnabled && !feedbackSent && (
+          <div className="mt-2 border-t border-gray-200 pt-2">
+            <p className="text-xs text-gray-500 mb-2">Esta respuesta te fue útil?</p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isSendingFeedback}
+                onClick={() => void submitFeedback(true, null)}
+                className="px-2 py-1 rounded-md border border-gray-300 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-60"
+              >
+                👍 Si
+              </button>
+              <button
+                type="button"
+                disabled={isSendingFeedback}
+                onClick={() => setShowReasonPicker((v) => !v)}
+                className="px-2 py-1 rounded-md border border-gray-300 text-xs text-gray-700 hover:bg-gray-100 disabled:opacity-60"
+              >
+                👎 No
+              </button>
+            </div>
+            {showReasonPicker && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {feedbackReasons.map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    disabled={isSendingFeedback}
+                    onClick={() => void submitFeedback(false, reason)}
+                    className="px-2 py-1 rounded-full bg-gray-100 text-xs text-gray-700 hover:bg-gray-200 disabled:opacity-60"
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {isBot && message.metadata?.disclaimer != null && (

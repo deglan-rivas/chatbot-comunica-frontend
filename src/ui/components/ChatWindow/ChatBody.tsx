@@ -9,10 +9,15 @@ interface ChatBodyProps {
   isTyping: boolean;
   onButtonClick?: (messageId: string, button: MessageButton) => void;
   onRatingSubmit?: (messageId: string, rating: number) => void;
+  onFeedbackSubmit?: (payload: {
+    messageId: string;
+    isHelpful: boolean;
+    reason?: string | null;
+  }) => Promise<boolean>;
 }
 
 export const ChatBody = forwardRef<HTMLDivElement, ChatBodyProps>(
-  function ChatBody({ messages, isTyping, onButtonClick, onRatingSubmit }, ref) {
+  function ChatBody({ messages, isTyping, onButtonClick, onRatingSubmit, onFeedbackSubmit }, ref) {
     return (
       <div
         ref={ref}
@@ -28,6 +33,7 @@ export const ChatBody = forwardRef<HTMLDivElement, ChatBodyProps>(
             message={message}
             onButtonClick={(btn) => onButtonClick?.(message.id, btn)}
             onRatingSubmit={(rating) => onRatingSubmit?.(message.id, rating)}
+            onFeedbackSubmit={onFeedbackSubmit}
           />
         ))}
 

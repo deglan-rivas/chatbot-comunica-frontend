@@ -178,6 +178,7 @@ export class WebSocketService {
             content: data.content || 'Conectado.',
             timestamp: new Date(data.timestamp || Date.now()),
             status: 'read',
+            metadata: { feedbackEnabled: false },
           };
           this.events.onMessage?.(systemMessage);
           return;
@@ -191,7 +192,11 @@ export class WebSocketService {
             content: data.content || 'Ha ocurrido un error.',
             timestamp: new Date(data.timestamp || Date.now()),
             status: 'read',
-            metadata: { isError: true, conversationId: data.state?.conversation_id },
+            metadata: {
+              isError: true,
+              conversationId: data.state?.conversation_id,
+              feedbackEnabled: false,
+            },
           };
           this.events.onMessage?.(errorMessage);
           return;
@@ -211,6 +216,7 @@ export class WebSocketService {
               confidence_level: data.confidence_level,
               source: data.source,
               disclaimer: data.disclaimer,
+              feedbackEnabled: data.feedback_enabled === true,
             },
           };
           this.events.onMessage?.(fallbackMessage);
@@ -291,6 +297,7 @@ export class WebSocketService {
         confidence_level: data.confidence_level,
         source: data.source,
         disclaimer: data.disclaimer,
+        feedbackEnabled: data.feedback_enabled === true,
       },
     };
 
@@ -437,6 +444,14 @@ export class WebSocketService {
 
   getUserId(): string {
     return this.userId;
+  }
+
+  getSessionId(): string | null {
+    return this.getSessionIdFromStorage();
+  }
+
+  clearStoredSessionId(): void {
+    this.clearSessionId();
   }
 
   setEvents(events: WebSocketEvents): void {
