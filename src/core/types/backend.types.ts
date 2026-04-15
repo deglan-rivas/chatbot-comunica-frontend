@@ -15,6 +15,7 @@ export interface BackendResponse {
   type: 'system' | 'message' | 'error';
   content: string;
   timestamp?: string;
+  feedback_enabled?: boolean;
   // Solo en type === 'message'
   response_rich?: ResponseRich;
   disclaimer?: string;

@@ -18,6 +18,11 @@ interface ChatWindowProps {
   onSendAttachment?: (file: File) => void;
   onButtonClick?: (messageId: string, button: MessageButton) => void;
   onRatingSubmit?: (messageId: string, rating: number) => void;
+  onFeedbackSubmit?: (payload: {
+    messageId: string;
+    isHelpful: boolean;
+    reason?: string | null;
+  }) => Promise<boolean>;
   onTyping?: (isTyping: boolean) => void;
 }
 
@@ -33,6 +38,7 @@ export function ChatWindow({
   onSendAttachment,
   onButtonClick,
   onRatingSubmit,
+  onFeedbackSubmit,
   onTyping,
 }: ChatWindowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -66,6 +72,7 @@ export function ChatWindow({
         isTyping={isTyping}
         onButtonClick={onButtonClick}
         onRatingSubmit={onRatingSubmit}
+        onFeedbackSubmit={onFeedbackSubmit}
       />
 
       <ChatInput
