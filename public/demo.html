@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="/config.js"></script>
   <title>Chatbot Widget - Demo</title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -200,6 +201,8 @@ ChatbotWidget.init({
       statusEl.textContent = message;
     }
 
+    const chatName = window.env?.VITE_CHAT_NAME || 'Asistente';
+
     try {
       // Initialize widget
       const widget = ChatbotWidget.init({
@@ -208,7 +211,7 @@ ChatbotWidget.init({
           websocket: 'wss://echo.websocket.org',
         },
         bot: {
-          name: 'Soporte Cobranzas',
+          name: chatName,
           welcomeMessage: 'Buenos dias. Soy Cobranzas, tu asistente virtual...',
           typingDelay: 1000,
         },

@@ -34,7 +34,12 @@ function getWebSocketUrl(): string {
   return `${base}/ws/${userId}`;
 }
 
+function getChatName(): string {
+  return window.env?.VITE_CHAT_NAME || import.meta.env.VITE_CHAT_NAME || 'Asistente';
+}
+
 const websocketUrl = getWebSocketUrl();
+const chatName = getChatName();
 
 // Initialize widget
 try {
@@ -44,7 +49,7 @@ try {
       websocket: websocketUrl,
     },
     bot: {
-      name: 'Eleccia Comunicaciones',
+      name: chatName,
       welcomeMessage: 'Bienvenido al Jurado Nacional de Elecciones. En que puedo ayudarte?',
     },
     position: 'bottom-right',

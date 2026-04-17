@@ -103,13 +103,14 @@
     // Generar userId único por sesión de navegador
     const userId = crypto.randomUUID();
     const websocketUrl = `${wsBase}/ws/${userId}`;
+    const chatName = window.env?.VITE_CHAT_NAME || 'Asistente';
 
     try {
       ChatbotWidget.init({
         projectId: 'demo',
         endpoints: { websocket: websocketUrl },
         bot: {
-          name: 'Eleccia Comunicaciones',
+          name: chatName,
           welcomeMessage: 'Bienvenido al Jurado Nacional de Elecciones. En que puedo ayudarte?',
         },
         position: 'bottom-right',

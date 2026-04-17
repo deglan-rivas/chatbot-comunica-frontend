@@ -5,7 +5,8 @@
 echo "window.env = {
   VITE_WEBSOCKET_URL: \"${VITE_WEBSOCKET_URL:-}\",
   VITE_EMBED_API_BASE_URL: \"${VITE_EMBED_API_BASE_URL:-}\",
-  VITE_APP_ENV: \"${VITE_APP_ENV:-PRD}\"
+  VITE_APP_ENV: \"${VITE_APP_ENV:-PRD}\",
+  VITE_CHAT_NAME: \"${VITE_CHAT_NAME:-Asistente}\"
 };" > /usr/share/nginx/html/config.js
 chmod 644 /usr/share/nginx/html/config.js
 

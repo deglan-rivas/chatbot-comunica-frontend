@@ -2,6 +2,7 @@ type ChatbotWidgetGlobal = {
   init: (config: {
     projectId: string;
     endpoints: { websocket: string };
+    bot?: { name?: string };
   }) => void;
   getInstance?: () => unknown;
 };
@@ -31,6 +32,10 @@ function normalizeApiBase(rawUrl: string): string {
 }
 
 const API_BASE_URL = normalizeApiBase(RAW_API_BASE);
+const CHAT_NAME =
+  (typeof window !== 'undefined' && window.env?.VITE_CHAT_NAME) ||
+  import.meta.env.VITE_CHAT_NAME ||
+  'Asistente';
 const EMBED_SCRIPT = (() => {
   const current = document.currentScript;
   if (current instanceof HTMLScriptElement) return current;
@@ -130,6 +135,7 @@ async function bootstrap(): Promise<void> {
     widgetApi.init({
       projectId,
       endpoints: { websocket: API_BASE_URL },
+      bot: { name: CHAT_NAME },
     });
   }
 }
