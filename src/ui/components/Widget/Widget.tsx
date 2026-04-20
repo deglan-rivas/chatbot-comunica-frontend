@@ -334,14 +334,12 @@ export function Widget({ websocketService }: WidgetProps) {
       if (listItem?.enlace) {
         const targetUrl = resolveBackendLink(listItem.enlace);
         window.open(targetUrl, '_blank');
-        updateMessageOptions(messageId, button.value);
         return;
       }
 
       const isLink = button.action === 'open_link' || (typeof button.value === 'string' && /^https?:\/\//i.test(button.value));
       if (isLink) {
         window.open(resolveBackendLink(String(button.value)), '_blank');
-        updateMessageOptions(messageId, button.value);
         return;
       }
 
