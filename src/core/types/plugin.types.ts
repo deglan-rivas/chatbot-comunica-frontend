@@ -36,10 +36,6 @@ export interface PluginHooks {
   onWidgetClose?: () => void;
   onUserTyping?: (isTyping: boolean) => void;
 
-  // Media
-  onBeforeMediaUpload?: (file: File) => File | null;
-  onAfterMediaUpload?: (url: string, file: File) => void;
-
   // Interactions
   onButtonClick?: (buttonId: string, value: unknown) => void;
   onRatingSubmit?: (rating: number) => void;

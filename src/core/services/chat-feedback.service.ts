@@ -45,7 +45,7 @@ const REQUEST_TIMEOUT_MS = 4000;
 const RETRY_DELAYS_MS = [2000, 5000] as const;
 
 let isQueueFlushing = false;
-let onlineListenerAttached = false;
+let onlineListenerRegistered = false;
 
 function withTimeout(signalTimeoutMs: number): AbortSignal {
   const controller = new AbortController();
@@ -119,9 +119,9 @@ function enqueue(event: QueuedEvent): void {
   writeQueue(queue);
 }
 
-function attachOnlineListener(apiBaseUrl: string): void {
-  if (onlineListenerAttached) return;
-  onlineListenerAttached = true;
+function registerOnlineListener(apiBaseUrl: string): void {
+  if (onlineListenerRegistered) return;
+  onlineListenerRegistered = true;
   window.addEventListener('online', () => {
     void flushQueue(apiBaseUrl);
   });
@@ -183,7 +183,7 @@ export async function sendChatFeedback(
   apiBaseUrl: string,
   payload: ChatFeedbackPayload
 ): Promise<boolean> {
-  attachOnlineListener(apiBaseUrl);
+  registerOnlineListener(apiBaseUrl);
 
   const dedupeKey = `${payload.session_id}:${payload.message_id ?? 'unknown'}:feedback`;
   if (wasSent(FEEDBACK_SENT_PREFIX, dedupeKey)) return true;
@@ -214,7 +214,7 @@ export async function sendChatResolution(
   apiBaseUrl: string,
   payload: ChatResolutionPayload
 ): Promise<boolean> {
-  attachOnlineListener(apiBaseUrl);
+  registerOnlineListener(apiBaseUrl);
 
   const dedupeKey = `${payload.session_id}:resolution`;
   if (wasSent(RESOLUTION_SENT_PREFIX, dedupeKey)) return true;
@@ -245,7 +245,7 @@ export async function endChatSession(
   apiBaseUrl: string,
   payload: EndChatSessionPayload
 ): Promise<boolean> {
-  attachOnlineListener(apiBaseUrl);
+  registerOnlineListener(apiBaseUrl);
 
   const dedupeKey = `${payload.session_id}:session_end`;
   if (wasSent(SESSION_END_SENT_PREFIX, dedupeKey)) return true;

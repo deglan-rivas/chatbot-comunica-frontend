@@ -3,26 +3,18 @@ import { cn } from '@core/utils';
 
 interface ChatInputProps {
   onSend: (text: string) => void;
-  onAttachment?: (file: File) => void;
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
-  features?: {
-    attachments?: boolean;
-    emoji?: boolean;
-  };
   placeholder?: string;
 }
 
 export function ChatInput({
   onSend,
-  onAttachment,
   onTyping,
   disabled = false,
-  features = { attachments: true },
   placeholder = 'Escribe un mensaje',
 }: ChatInputProps) {
   const [text, setText] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const handleSend = () => {
@@ -57,14 +49,6 @@ export function ChatInput({
     }
   };
 
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onAttachment?.(file);
-      e.target.value = '';
-    }
-  };
-
   return (
     <div
       className={cn(
@@ -73,41 +57,6 @@ export function ChatInput({
         'border-t border-gray-200 dark:border-gray-800'
       )}
     >
-      {features.attachments && (
-        <>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled}
-            className={cn(
-              'text-primary p-1 rounded-full',
-              'hover:bg-gray-100 dark:hover:bg-gray-800',
-              'transition-colors disabled:opacity-50'
-            )}
-            aria-label="Adjuntar archivo"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="w-5 h-5"
-              aria-hidden
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21.44 11.05l-8.49 8.49a5 5 0 01-7.07-7.07l8.49-8.49a3 3 0 114.24 4.24l-8.49 8.49a1 1 0 01-1.41-1.41l7.78-7.78" />
-            </svg>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            onChange={handleFileSelect}
-            accept="image/*,video/*,.pdf,.doc,.docx"
-            className="hidden"
-          />
-        </>
-      )}
-
       <div
         className={cn(
           'flex-1 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2',

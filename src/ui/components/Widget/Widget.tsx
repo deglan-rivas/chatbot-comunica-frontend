@@ -28,7 +28,7 @@ const GOODBYE_REGEX = /\b(adios|adiós|hasta luego|nos vemos|chao|bye)\b/i;
 
 export function Widget({ websocketService }: WidgetProps) {
   const { isOpen, hasUnread, toggleOpen, setHasUnread, setIsOpen } = useUIStore();
-  const { position, bot, features, autoOpen, autoOpenDelay, endpoints } = useConfigStore();
+  const { position, bot, autoOpen, autoOpenDelay, endpoints } = useConfigStore();
   const {
     messages,
     isTyping,
@@ -493,7 +493,6 @@ export function Widget({ websocketService }: WidgetProps) {
           isTyping={isTyping}
           isConnected={isConnected}
           bot={bot}
-          features={features}
           position={position}
           onClose={handleCloseChat}
           onSendMessage={handleSendMessage}

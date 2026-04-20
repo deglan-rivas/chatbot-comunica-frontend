@@ -38,7 +38,6 @@ const defaultBot: BotConfig = {
 };
 
 const defaultFeatures: Features = {
-  attachments: true,
   voice: false,
   emoji: true,
   darkMode: true,
