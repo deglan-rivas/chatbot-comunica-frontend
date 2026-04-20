@@ -4,18 +4,16 @@ import { ChatHeader } from './ChatHeader';
 import { ChatBody } from './ChatBody';
 import { ChatInput } from './ChatInput';
 import type { Message, MessageButton } from '@core/types/message.types';
-import type { Features, BotConfig } from '@/config/schema';
+import type { BotConfig } from '@/config/schema';
 
 interface ChatWindowProps {
   messages: Message[];
   isTyping: boolean;
   isConnected: boolean;
   bot: BotConfig;
-  features?: Features;
   position: 'bottom-right' | 'bottom-left';
   onClose: () => void;
   onSendMessage: (text: string) => void;
-  onSendAttachment?: (file: File) => void;
   onButtonClick?: (messageId: string, button: MessageButton) => void;
   onRatingSubmit?: (messageId: string, rating: number) => void;
   onFeedbackSubmit?: (payload: {
@@ -31,11 +29,9 @@ export function ChatWindow({
   isTyping,
   isConnected,
   bot,
-  features,
   position,
   onClose,
   onSendMessage,
-  onSendAttachment,
   onButtonClick,
   onRatingSubmit,
   onFeedbackSubmit,
@@ -77,10 +73,8 @@ export function ChatWindow({
 
       <ChatInput
         onSend={onSendMessage}
-        onAttachment={onSendAttachment}
         onTyping={onTyping}
         disabled={!isConnected}
-        features={features}
       />
     </div>
   );

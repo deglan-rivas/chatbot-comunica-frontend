@@ -7,8 +7,6 @@ import { MessageStatus } from './MessageStatus';
 import { ButtonGroup } from '../Interactive/ButtonGroup';
 import { ListMessage } from './ListMessage';
 import { RatingInput } from '../Interactive/RatingInput';
-import { ImageMessage } from '../Media/ImageMessage';
-import { VideoPlayer } from '../Media/VideoPlayer';
 
 interface MessageBubbleProps {
   message: Message;
@@ -80,7 +78,7 @@ export function MessageBubble({
             'bg-user-bubble-light dark:bg-user-bubble-dark rounded-br-none',
           isBot && 'bg-bot-bubble-light dark:bg-bot-bubble-dark rounded-bl-none text-left',
           isBot && isError && 'border border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-950/30',
-          (message.options || message.attachment) && 'w-full'
+          message.options && 'w-full'
         )}
       >
         {isList ? (
@@ -103,18 +101,6 @@ export function MessageBubble({
                 className="text-sm text-gray-800 dark:text-gray-100 break-words overflow-hidden"
                 dangerouslySetInnerHTML={{ __html: formatMarkdownContent(message.content) }}
               />
-            )}
-
-            {message.attachment?.type === 'image' && (
-              <div className="mt-2">
-                <ImageMessage attachment={message.attachment} />
-              </div>
-            )}
-
-            {message.attachment?.type === 'video' && (
-              <div className="mt-2">
-                <VideoPlayer attachment={message.attachment} />
-              </div>
             )}
 
             {title && (

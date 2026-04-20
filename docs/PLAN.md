@@ -27,9 +27,6 @@ Widget de chatbot embebible estilo WhatsApp con arquitectura plugin, separacion 
 - [x] `OptionsMessage` (botones interactivos)
 - [x] `RatingMessage` (estrellas de valoracion)
 - [x] `TypingIndicator`
-- [ ] `ImageMessage` - visualizacion de imagenes
-- [ ] `VideoPlayer` - reproductor de video
-- [ ] `AttachmentPicker` - selector de archivos
 
 ### Fase 4: Integracion
 - [x] Entry point (`index.tsx` con Shadow DOM)
@@ -48,9 +45,7 @@ Widget de chatbot embebible estilo WhatsApp con arquitectura plugin, separacion 
 ## Proximos Pasos Prioritarios
 
 1. **Conectar WebSocket real** - Reemplazar `echo.websocket.org` por endpoint del backend
-2. **Componentes multimedia** - `ImageMessage`, `VideoPlayer`
-3. **Upload de archivos** - `media.service.ts` + `AttachmentPicker`
-4. **Plugins built-in** - Analytics, notificaciones
+2. **Plugins built-in** - Analytics, notificaciones
 
 ## Metricas Actuales
 

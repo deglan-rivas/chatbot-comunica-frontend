@@ -1,24 +1,11 @@
 export type MessageType =
   | 'text'
-  | 'image'
-  | 'video'
-  | 'file'
   | 'options'
   | 'rating'
   | 'system';
 
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'error';
 export type MessageSender = 'user' | 'bot' | 'system';
-
-export interface Attachment {
-  id: string;
-  type: 'image' | 'video' | 'file';
-  url: string;
-  thumbnailUrl?: string;
-  name?: string;
-  size?: number;
-  mimeType?: string;
-}
 
 export interface MessageButton {
   id: string;
@@ -49,7 +36,6 @@ export interface Message {
   content: string;
   timestamp: Date;
   status: MessageStatus;
-  attachment?: Attachment;
   options?: MessageOptions;
   rating?: MessageRating;
   metadata?: Record<string, unknown>;

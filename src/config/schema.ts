@@ -26,11 +26,9 @@ export const BotConfigSchema = z.object({
 export const EndpointsSchema = z.object({
   websocket: z.string().url(),
   api: z.string().url().optional(),
-  mediaUpload: z.string().url().optional(),
 });
 
 export const FeaturesSchema = z.object({
-  attachments: z.boolean().optional().default(true),
   voice: z.boolean().optional().default(false),
   emoji: z.boolean().optional().default(true),
   darkMode: z.boolean().optional().default(true),

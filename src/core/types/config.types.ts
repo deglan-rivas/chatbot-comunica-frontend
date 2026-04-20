@@ -29,11 +29,9 @@ export interface BotConfig {
 export interface Endpoints {
   websocket: string;
   api?: string;
-  mediaUpload?: string;
 }
 
 export interface Features {
-  attachments?: boolean;
   voice?: boolean;
   emoji?: boolean;
   darkMode?: boolean;

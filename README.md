@@ -104,6 +104,5 @@ ChatbotWidget.destroy()         // Destruir widget
 
 1. Conectar con endpoint WebSocket real del backend
 2. Implementar componentes multimedia (imagen, video)
-3. Implementar upload de archivos
-4. Agregar plugins built-in (analytics, notificaciones)
-5. Optimizar bundle size (objetivo: <150KB gzipped)
+3. Agregar plugins built-in (analytics, notificaciones)
+4. Optimizar bundle size (objetivo: <150KB gzipped)
