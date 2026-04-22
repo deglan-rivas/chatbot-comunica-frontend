@@ -4,6 +4,7 @@ import type {
   BackendResponse,
   ResponseRich,
   BackendAction,
+  BackendMessageMeta,
 } from '@core/types/backend.types';
 import { generateId } from '@core/utils';
 
@@ -24,6 +25,7 @@ export interface WebSocketEvents {
   onMessage?: (message: Message) => void;
   onTyping?: (isTyping: boolean) => void;
   onReconnect?: (attempt: number) => void;
+  onSessionIdChange?: (sessionId: string) => void;
 }
 
 export class WebSocketService {
@@ -169,16 +171,23 @@ export class WebSocketService {
     this.ws.onmessage = (event) => {
       try {
         const data: BackendResponse = JSON.parse(event.data);
+        if (data.session_id) {
+          this.setSessionId(data.session_id);
+          this.events.onSessionIdChange?.(data.session_id);
+        }
 
         if (data.type === 'system') {
           const systemMessage: Message = {
             id: generateId(),
-            type: 'text',
-            sender: 'bot',
+            type: 'system',
+            sender: 'system',
             content: data.content || 'Conectado.',
             timestamp: new Date(data.timestamp || Date.now()),
             status: 'read',
-            metadata: { feedbackEnabled: false },
+            metadata: {
+              feedbackEnabled: false,
+              messageMeta: data.message_meta,
+            },
           };
           this.events.onMessage?.(systemMessage);
           return;
@@ -196,6 +205,7 @@ export class WebSocketService {
               isError: true,
               conversationId: data.state?.conversation_id,
               feedbackEnabled: false,
+              messageMeta: data.message_meta,
             },
           };
           this.events.onMessage?.(errorMessage);
@@ -217,6 +227,7 @@ export class WebSocketService {
               source: data.source,
               disclaimer: data.disclaimer,
               feedbackEnabled: data.feedback_enabled === true,
+              messageMeta: data.message_meta,
             },
           };
           this.events.onMessage?.(fallbackMessage);
@@ -285,6 +296,8 @@ export class WebSocketService {
 
   private transformResponse(data: BackendResponse): Message {
     const rich = data.response_rich!;
+    const meta = data.message_meta;
+    const feedbackEnabled = this.resolveFeedbackEnabled(data, meta);
     const baseMessage = {
       id: generateId(),
       sender: 'bot' as const,
@@ -297,11 +310,22 @@ export class WebSocketService {
         confidence_level: data.confidence_level,
         source: data.source,
         disclaimer: data.disclaimer,
-        feedbackEnabled: data.feedback_enabled === true,
+        feedbackEnabled,
+        messageMeta: meta,
       },
     };
 
     return this.transformRichResponse(rich, baseMessage, data);
+  }
+
+  private resolveFeedbackEnabled(
+    data: BackendResponse,
+    messageMeta?: BackendMessageMeta
+  ): boolean {
+    if (typeof messageMeta?.feedback_enabled === 'boolean') {
+      return messageMeta.feedback_enabled;
+    }
+    return data.feedback_enabled === true;
   }
 
   private transformRichResponse(

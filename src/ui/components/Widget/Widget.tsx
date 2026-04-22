@@ -16,13 +16,16 @@ import type {
   WebSocketService,
   WebSocketEvents,
 } from '@core/services/websocket.service';
+import type { BackendMessageMeta, SessionStatusResponse } from '@core/types/backend.types';
 
 interface WidgetProps {
   websocketService: WebSocketService;
 }
 
-const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000;
-const MAX_SESSION_AGE_MS = 60 * 60 * 1000;
+const DEFAULT_IDLE_TIMEOUT_MINUTES = 10;
+const DEFAULT_MAX_AGE_MINUTES = 60;
+const RESOLUTION_PROMPT_TIMEOUT_MS = 180 * 1000;
+const TIMEOUT_WARNING_LEAD_MS = 60 * 1000;
 const GOODBYE_GRACE_MS = 60 * 1000;
 const GOODBYE_REGEX = /\b(adios|adiós|hasta luego|nos vemos|chao|bye)\b/i;
 
@@ -49,7 +52,12 @@ export function Widget({ websocketService }: WidgetProps) {
   const lastActivityAtRef = useRef<number>(Date.now());
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxAgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inactivityWarningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resolutionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goodbyeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warnedInactivityRef = useRef(false);
+  const idleTimeoutMinutesRef = useRef(DEFAULT_IDLE_TIMEOUT_MINUTES);
+  const maxAgeMinutesRef = useRef(DEFAULT_MAX_AGE_MINUTES);
 
   const getApiBaseUrl = useCallback((): string => {
     const cfg = useConfigStore.getState();
@@ -65,11 +73,37 @@ export function Widget({ websocketService }: WidgetProps) {
       clearTimeout(maxAgeTimerRef.current);
       maxAgeTimerRef.current = null;
     }
+    if (inactivityWarningTimerRef.current) {
+      clearTimeout(inactivityWarningTimerRef.current);
+      inactivityWarningTimerRef.current = null;
+    }
+    if (resolutionTimerRef.current) {
+      clearTimeout(resolutionTimerRef.current);
+      resolutionTimerRef.current = null;
+    }
     if (goodbyeTimerRef.current) {
       clearTimeout(goodbyeTimerRef.current);
       goodbyeTimerRef.current = null;
     }
   }, []);
+
+  const addSystemMessage = useCallback(
+    (content: string, messageMeta?: BackendMessageMeta) => {
+      addMessage({
+        id: generateId(),
+        type: 'system',
+        sender: 'system',
+        content,
+        timestamp: new Date(),
+        status: 'read',
+        metadata: {
+          feedbackEnabled: false,
+          messageMeta,
+        },
+      });
+    },
+    [addMessage]
+  );
 
   const prevOpenRef = useRef<boolean | null>(null);
   useEffect(() => {
@@ -144,6 +178,7 @@ export function Widget({ websocketService }: WidgetProps) {
 
         sessionStartedAtRef.current = null;
         lastActivityAtRef.current = Date.now();
+        warnedInactivityRef.current = false;
         setSessionLifecycle('closed');
       } finally {
         endingSessionRef.current = false;
@@ -161,8 +196,10 @@ export function Widget({ websocketService }: WidgetProps) {
     const ageElapsed = now - startedAt;
     const inactivityElapsed = now - lastActivity;
 
-    const maxAgeRemaining = Math.max(0, MAX_SESSION_AGE_MS - ageElapsed);
-    const inactivityRemaining = Math.max(0, INACTIVITY_TIMEOUT_MS - inactivityElapsed);
+    const maxAgeMs = maxAgeMinutesRef.current * 60 * 1000;
+    const inactivityMs = idleTimeoutMinutesRef.current * 60 * 1000;
+    const maxAgeRemaining = Math.max(0, maxAgeMs - ageElapsed);
+    const inactivityRemaining = Math.max(0, inactivityMs - inactivityElapsed);
 
     maxAgeTimerRef.current = setTimeout(() => {
       void finalizeSession('MAX_SESSION_AGE');
@@ -171,10 +208,25 @@ export function Widget({ websocketService }: WidgetProps) {
     inactivityTimerRef.current = setTimeout(() => {
       void finalizeSession('INACTIVITY_TIMEOUT');
     }, inactivityRemaining);
-  }, [clearSessionTimers, finalizeSession]);
+
+    if (inactivityRemaining > TIMEOUT_WARNING_LEAD_MS) {
+      inactivityWarningTimerRef.current = setTimeout(() => {
+        if (warnedInactivityRef.current) return;
+        warnedInactivityRef.current = true;
+        addSystemMessage(
+          'Tu sesión está por vencer por inactividad. Envía un mensaje para mantenerla activa.',
+          {
+            message_kind: 'system_notice',
+            session_status: 'active',
+          }
+        );
+      }, inactivityRemaining - TIMEOUT_WARNING_LEAD_MS);
+    }
+  }, [addSystemMessage, clearSessionTimers, finalizeSession]);
 
   const registerMessageActivity = useCallback(() => {
     lastActivityAtRef.current = Date.now();
+    warnedInactivityRef.current = false;
     if (goodbyeTimerRef.current) {
       clearTimeout(goodbyeTimerRef.current);
       goodbyeTimerRef.current = null;
@@ -183,6 +235,62 @@ export function Widget({ websocketService }: WidgetProps) {
       scheduleSessionTimeouts();
     }
   }, [scheduleSessionTimeouts]);
+
+  const startResolutionPromptTimeout = useCallback(() => {
+    if (resolutionTimerRef.current) {
+      clearTimeout(resolutionTimerRef.current);
+    }
+    resolutionTimerRef.current = setTimeout(() => {
+      addSystemMessage(
+        'La sesión se cerró por inactividad luego de la pregunta de resolución.',
+        {
+          message_kind: 'timeout_closed',
+          session_status: 'ended',
+          close_reason: 'INACTIVITY_AFTER_RESOLUTION_PROMPT',
+        }
+      );
+      void finalizeSession('INACTIVITY_AFTER_RESOLUTION_PROMPT');
+    }, RESOLUTION_PROMPT_TIMEOUT_MS);
+  }, [addSystemMessage, finalizeSession]);
+
+  const syncSessionStatus = useCallback(async () => {
+    const apiBase = endpoints.api;
+    const sessionId = websocketService.getSessionId();
+    if (!apiBase || !sessionId) return;
+
+    try {
+      const response = await fetch(`${apiBase.replace(/\/+$/, '')}/session/${sessionId}/status`);
+      if (!response.ok) return;
+
+      const status = (await response.json()) as SessionStatusResponse;
+      if (typeof status.idle_timeout_minutes === 'number' && status.idle_timeout_minutes > 0) {
+        idleTimeoutMinutesRef.current = status.idle_timeout_minutes;
+      }
+      if (typeof status.max_age_minutes === 'number' && status.max_age_minutes > 0) {
+        maxAgeMinutesRef.current = status.max_age_minutes;
+      }
+      if (status.status === 'ended' || status.status === 'not_found') {
+        websocketService.clearStoredSessionId();
+        websocketService.disconnect();
+        useChatStore.getState().setConversationId(null);
+        setConnectionStatus('disconnected');
+        addSystemMessage(
+          'La sesión anterior ya no está activa. Continuaremos en una nueva sesión.',
+          {
+            message_kind: 'timeout_closed',
+            session_status: status.status,
+            close_reason: status.close_reason ?? undefined,
+          }
+        );
+        websocketService.connect();
+        return;
+      }
+
+      scheduleSessionTimeouts();
+    } catch {
+      // Evitamos romper UX por fallas transitorias de estado.
+    }
+  }, [addSystemMessage, endpoints.api, scheduleSessionTimeouts, setConnectionStatus, websocketService]);
 
   const startGoodbyeGrace = useCallback(() => {
     if (goodbyeTimerRef.current) {
@@ -202,27 +310,55 @@ export function Widget({ websocketService }: WidgetProps) {
         if (activeSessionId) {
           sessionStartedAtRef.current = Date.now();
           lastActivityAtRef.current = Date.now();
+          warnedInactivityRef.current = false;
           scheduleSessionTimeouts();
         }
+        void syncSessionStatus();
       },
       onDisconnect: () => setConnectionStatus('disconnected'),
       onError: () => setConnectionStatus('error'),
       onMessage: (message) => {
         registerMessageActivity();
         setTyping(false);
+
+        const messageMeta = message.metadata?.messageMeta as BackendMessageMeta | undefined;
+        if (typeof messageMeta?.idle_timeout_minutes === 'number' && messageMeta.idle_timeout_minutes > 0) {
+          idleTimeoutMinutesRef.current = messageMeta.idle_timeout_minutes;
+        }
+        if (typeof messageMeta?.max_age_minutes === 'number' && messageMeta.max_age_minutes > 0) {
+          maxAgeMinutesRef.current = messageMeta.max_age_minutes;
+        }
+        if (message.sender === 'bot' && messageMeta?.message_kind === 'resolution_prompt') {
+          startResolutionPromptTimeout();
+        }
+        if (messageMeta?.message_kind === 'timeout_closed') {
+          warnedInactivityRef.current = false;
+        }
+
         addMessage(message);
         if (!useUIStore.getState().isOpen) {
           setHasUnread(true);
         }
       },
       onTyping: setTyping,
+      onSessionIdChange: () => {
+        sessionStartedAtRef.current = Date.now();
+        warnedInactivityRef.current = false;
+        scheduleSessionTimeouts();
+      },
     };
 
     websocketService.setEvents(events);
     websocketService.connect();
 
+    const onFocus = () => {
+      void syncSessionStatus();
+    };
+    window.addEventListener('focus', onFocus);
+
     return () => {
       clearSessionTimers();
+      window.removeEventListener('focus', onFocus);
       websocketService.disconnect();
     };
   }, [
@@ -230,9 +366,11 @@ export function Widget({ websocketService }: WidgetProps) {
     clearSessionTimers,
     registerMessageActivity,
     scheduleSessionTimeouts,
+    startResolutionPromptTimeout,
     setConnectionStatus,
     setHasUnread,
     setTyping,
+    syncSessionStatus,
     websocketService,
   ]);
 

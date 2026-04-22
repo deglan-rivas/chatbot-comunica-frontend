@@ -14,8 +14,10 @@ export interface BackendRequest {
 export interface BackendResponse {
   type: 'system' | 'message' | 'error';
   content: string;
+  session_id?: string;
   timestamp?: string;
   feedback_enabled?: boolean;
+  message_meta?: BackendMessageMeta;
   // Solo en type === 'message'
   response_rich?: ResponseRich;
   disclaimer?: string;
@@ -39,6 +41,50 @@ export interface BackendResponse {
   conversation_active?: boolean;
   should_finalize?: boolean;
   event_id?: string | null;
+}
+
+export interface BackendMessageMeta {
+  message_kind?:
+    | 'normal'
+    | 'resolution_prompt'
+    | 'confirmation_prompt'
+    | 'dni_request'
+    | 'timeout_closed'
+    | 'system_notice'
+    | string;
+  requires_user_action?: boolean;
+  feedback_enabled?: boolean;
+  session_status?: 'active' | 'ended' | 'not_found' | string;
+  close_reason?: string | null;
+  idle_timeout_minutes?: number;
+  max_age_minutes?: number;
+}
+
+export interface BackendSystemMessage {
+  type: 'system';
+  content: string;
+  timestamp?: string;
+  feedback_enabled?: boolean;
+  message_meta?: BackendMessageMeta;
+}
+
+export interface BackendChatResponse {
+  session_id?: string;
+  response?: string;
+  quick_replies?: string[] | null;
+  feedback_enabled?: boolean;
+  message_meta?: BackendMessageMeta;
+  system_messages?: BackendSystemMessage[];
+}
+
+export interface SessionStatusResponse {
+  session_id: string;
+  status: 'active' | 'ended' | 'not_found';
+  close_reason: string | null;
+  ended_at: string | null;
+  idle_timeout_minutes?: number;
+  max_age_minutes?: number;
+  server_time_utc?: string;
 }
 
 // Estructura de response_rich

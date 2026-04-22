@@ -18,7 +18,8 @@ export interface ChatResolutionPayload {
 export type SessionEndReason =
   | 'USER_GOODBYE'
   | 'INACTIVITY_TIMEOUT'
-  | 'MAX_SESSION_AGE';
+  | 'MAX_SESSION_AGE'
+  | 'INACTIVITY_AFTER_RESOLUTION_PROMPT';
 
 export interface EndChatSessionPayload {
   session_id: string;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { cn, formatMarkdownContent } from '@core/utils';
 import type { Message, MessageButton } from '@core/types/message.types';
-import type { BackendListItem } from '@core/types/backend.types';
+import type { BackendListItem, BackendMessageMeta } from '@core/types/backend.types';
 import { Timestamp } from '../Common/Timestamp';
 import { MessageStatus } from './MessageStatus';
 import { ButtonGroup } from '../Interactive/ButtonGroup';
@@ -34,7 +34,9 @@ export function MessageBubble({
   const listTitle = message.metadata?.listTitle as string | undefined;
   const isList = Array.isArray(listItems) && listItems.length > 0 && message.options?.buttons;
   const feedbackSent = Boolean(message.metadata?.feedbackSent);
-  const feedbackEnabled = message.metadata?.feedbackEnabled === true;
+  const messageMeta = message.metadata?.messageMeta as BackendMessageMeta | undefined;
+  const feedbackEnabled =
+    message.metadata?.feedbackEnabled === true || messageMeta?.feedback_enabled === true;
   const [showReasonPicker, setShowReasonPicker] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const feedbackReasons = ['no respondio', 'incorrecta', 'confusa', 'otro'] as const;
